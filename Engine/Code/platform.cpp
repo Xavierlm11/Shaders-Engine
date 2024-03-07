@@ -128,7 +128,7 @@ int main()
         ELOG("glfwInit() failed\n");
         return -1;
     }
-
+    //usamos core profile 3
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -250,6 +250,7 @@ int main()
             glfwMakeContextCurrent(backup_current_context);
         }
 
+        //funcion que actualiza el antiguo buffer de lo que vemos con el nuevo
         // Present image on screen
         glfwSwapBuffers(window);
 
