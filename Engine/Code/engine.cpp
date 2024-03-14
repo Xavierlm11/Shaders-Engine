@@ -9,6 +9,7 @@
 #include <imgui.h>
 #include <stb_image.h>
 #include <stb_image_write.h>
+#include "ModelLoadingFunc.h"
 #include "Globals.h"
 
 GLuint CreateProgramFromSource(String programSource, const char* shaderName)
@@ -100,6 +101,30 @@ u32 LoadProgram(App* app, const char* filepath, const char* programName)
 	program.filepath = filepath;
 	program.programName = programName;
 	program.lastWriteTimestamp = GetFileLastWriteTimestamp(filepath);
+
+	GLint attributeCount = 0;
+	glGetProgramiv(program.handle, GL_ACTIVE_ATTRIBUTES, &attributeCount);
+
+	for (GLuint i = 0; i < attributeCount; i++)
+	{
+
+
+		GLsizei bufSize = 256;
+		GLsizei length = 0;
+		GLint size = 0;
+		GLenum type = 0;
+		GLchar name[256];
+		glGetActiveAttrib(program.handle, i,
+			ARRAY_COUNT(name),
+			&length,
+			&size,
+			&type,
+			name);
+		u8 location= glGetAttribLocation(program.handle, name);
+		program.shaderLayout.attributes.push_back(ModelLoader::VertexShaderAttribute{location, (u8)size});
+
+	}
+
 	app->programs.push_back(program);
 
 	return app->programs.size() - 1;
@@ -180,6 +205,52 @@ u32 LoadTexture2D(App* app, const char* filepath)
 	}
 }
 
+GLuint FindVAO(Mesh& mesh, u32 submeshIndex, Program &program)
+{
+	SubMesh& subMesh = mesh.subMeshes[submeshIndex];
+
+	GLuint returnValue = 0;
+
+	for (u32 i = 0; i < (u32)subMesh.vaos.size(); ++i)
+	{
+		if (subMesh.vaos[i].programHandle == program.handle)
+		{
+			returnValue = subMesh.vaos[i];
+		}
+	}
+
+	if (returnValue == 0)
+	{
+		glGenVertexArrays(1, &returnValue);
+		glBindVertexArray(returnValue)
+			;
+
+		glBindBuffer(GL_ARRAY_BUFFER, mesh.vertexBufferHndle);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexBufferHndle);
+
+		auto& shaderLayout = program.shaderLayout.attributes;
+		for (auto shaderIt = shaderLayout.cbegin(); shaderIt !=shaderLayout.cend() ; ++shaderIt)
+		{
+			bool attributeWasLinked = false;
+			auto subMeshLayout = subMesh.vertexBufferLayout.attributes;
+			for (auto submeshIt = subMeshLayout.cbegin(); submeshIt != subMeshLayout.cend(); ++submeshIt)
+			{
+				if (shaderIt->location == submeshIt->location)
+				{
+					const u32 index = submeshIt->location;
+					const u32 ncomp = submeshIt->componentCount;
+					const u32 = submeshIt->offset;
+					const u32 = submeshIt->
+				}
+			}
+		}
+
+
+		ModelLoader::VAO vao = { returnValue, program.handle };
+
+	}
+}
+
 void Init(App* app)
 {
 	// TODO: Initialize your resources here!
@@ -220,6 +291,13 @@ void Init(App* app)
 	app->programUniformTexture = glGetUniformLocation(texturedGeometryProgram.handle, "uTexture");
 	app->diceTexIdx = LoadTexture2D(app, "dice.png");
 
+	ModelLoader::VertexBufferLayaout vertexBufferLayout = {};
+	vertexBufferLayout.attributes.push_back(ModelLoader::VertexBufferAttribute{0, 3, 0});
+	vertexBufferLayout.attributes.push_back(ModelLoader::VertexBufferAttribute{2, 2, 3 * sizeof(float)});
+	vertexBufferLayout.stride = 5 * sizeof(float);
+
+
+
 
 	app->mode = Mode_TexturedQuad;
 }
@@ -258,20 +336,27 @@ void Render(App* app)
 		glViewport(0, 0, app->displaySize.x, app->displaySize.y);
 		Program& programTexturedGeometry = app->programs[app->texturedGeometryProgramIdx];
 		glUseProgram(programTexturedGeometry.handle);
-		glBindVertexArray(app->vao);
+		
+		Model& model = app->models[app->patricioModel];
+		Mesh& mesh = app->meshes[model.meshIdx];
 
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		for (u32 i = 0; i < mesh.subMeshes.size(); ++i)
+		{
+			GLuint vao = FindVAO(mesh, i, texturedMeshProgram);
+			glBindVertexArray(vao);
 
-		glUniform1i(app->programUniformTexture, 0);
-		glActiveTexture(GL_TEXTURE0);
-		GLuint textureHandle = app->textures[app->diceTexIdx].handle;
-		glBindTexture(GL_TEXTURE_2D, textureHandle);
+			u32 subMeshMaterialIdx = model.materialIdx[i];
+			Material& submMeshMaterial = app->materials[submMeshMaterial.albedo];
 
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, app->textures[subMeshMaterialIdx.albedoTxture]);
+			glUniform1i(app->a,0);
 
-		glBindVertexArray(0);
-		glUseProgram(0);
+			SubMesh& 
+
+
+		}
+
 
 	}
 	break;
