@@ -138,7 +138,7 @@ struct App
 
 	//
 	u32 patricioModel;
-	GLuint a;
+	GLuint texturedMeshProgram_uTexture;
 
 	// Embedded geometry (in-editor simple meshes such as
 	// a screen filling quad, a cube, a sphere...)
