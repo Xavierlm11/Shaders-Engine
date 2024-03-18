@@ -16,14 +16,7 @@ namespace BufferManager
 #define PushMat3(buffer, value) PushAlignedData(buffer, value_ptr(value), sizeof(value), sizeof(vec4))
 #define PushMat4(buffer, value) PushAlignedData(buffer, value_ptr(value), sizeof(value), sizeof(vec4))
 
-	struct Buffer
-	{
-		GLsizei size;
-		GLenum type;
-		GLuint handle;
-		u8* data;
-		u32 head;
-	};
+	
 
 	bool IsPowerOf2(u32 value);
 	

@@ -54,6 +54,9 @@
     <ClCompile Include="Code\BufferFunc.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
+    <ClCompile Include="Code\ModelLoadingFunc.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ThirdParty\imgui-docking\imconfig.h">

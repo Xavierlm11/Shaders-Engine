@@ -8,39 +8,32 @@
 #include <vector>
 #include "Globals.h"
 
-
+struct App;
 
 namespace ModelLoader
 {
-	struct VertexBufferAttribute
-	{
-		u8 location;
-		u8 componentCount;
-		u8 offset;
-	};
+	
+	
 
-	struct VertexBufferLayaout
-	{
-		std::vector<VertexBufferAttribute> attributes ;
-		u8 stride;
-	};
+	Image LoadImage(const char* filename);
+	
 
-	struct VertexShaderAttribute
-	{
-		u8 location;
-		u8 componentCount;
-	};
-	struct VertexShaderLayaout
-	{
-		std::vector<VertexShaderAttribute> attributes;
-		
-	};
-	//VAO LINKA UNA COSA CON LA OTRA
-	struct VAO
-	{
-		GLuint handle;
-		GLuint programHandle;
-	};
+	void FreeImage(Image image);
+	
+
+	GLuint CreateTexture2DFromImage(Image image);
+	
+
+	u32 LoadTexture2D(App* app, const char* filepath);
+	
+
+	void ProcessAssimpMesh(const aiScene* scene, aiMesh* mesh, Mesh* myMesh, u32 baseMeshMaterialIndex, std::vector<u32>& submeshMaterialIndices);
+
+	void ProcessAssimpMaterial(App* app, aiMaterial* material, Material& myMaterial, String directory);
+
+	void ProcessAssimpNode(const aiScene* scene, aiNode* node, Mesh* myMesh, u32 baseMeshMaterialIndex, std::vector<u32>& submeshMaterialIndices);
+
+	u32 LoadModel(App* app, const char* filename);
 }
 
 

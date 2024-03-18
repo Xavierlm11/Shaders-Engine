@@ -120,89 +120,14 @@ u32 LoadProgram(App* app, const char* filepath, const char* programName)
 			&size,
 			&type,
 			name);
-		u8 location= glGetAttribLocation(program.handle, name);
-		program.shaderLayout.attributes.push_back(ModelLoader::VertexShaderAttribute{location, (u8)size});
+		u8 location = glGetAttribLocation(program.handle, name);
+		program.shaderLayout.attributes.push_back(VertexShaderAttribute{ location, (u8)size });
 
 	}
 
 	app->programs.push_back(program);
 
 	return app->programs.size() - 1;
-}
-
-Image LoadImage(const char* filename)
-{
-	Image img = {};
-	stbi_set_flip_vertically_on_load(true);
-	img.pixels = stbi_load(filename, &img.size.x, &img.size.y, &img.nchannels, 0);
-	if (img.pixels)
-	{
-		img.stride = img.size.x * img.nchannels;
-	}
-	else
-	{
-		ELOG("Could not open file %s", filename);
-	}
-	return img;
-}
-
-void FreeImage(Image image)
-{
-	stbi_image_free(image.pixels);
-}
-
-GLuint CreateTexture2DFromImage(Image image)
-{
-	GLenum internalFormat = GL_RGB8;
-	GLenum dataFormat = GL_RGB;
-	GLenum dataType = GL_UNSIGNED_BYTE;
-
-	switch (image.nchannels)
-	{
-	case 3: dataFormat = GL_RGB; internalFormat = GL_RGB8; break;
-	case 4: dataFormat = GL_RGBA; internalFormat = GL_RGBA8; break;
-	default: ELOG("LoadTexture2D() - Unsupported number of channels");
-	}
-
-	GLuint texHandle;
-	glGenTextures(1, &texHandle);
-	glBindTexture(GL_TEXTURE_2D, texHandle);
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, image.size.x, image.size.y, 0, dataFormat, dataType, image.pixels);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	return texHandle;
-}
-
-u32 LoadTexture2D(App* app, const char* filepath)
-{
-	for (u32 texIdx = 0; texIdx < app->textures.size(); ++texIdx)
-		if (app->textures[texIdx].filepath == filepath)
-			return texIdx;
-
-	Image image = LoadImage(filepath);
-
-	if (image.pixels)
-	{
-		Texture tex = {};
-		tex.handle = CreateTexture2DFromImage(image);
-		tex.filepath = filepath;
-
-		u32 texIdx = app->textures.size();
-		app->textures.push_back(tex);
-
-		FreeImage(image);
-		return texIdx;
-	}
-	else
-	{
-		return UINT32_MAX;
-	}
 }
 
 GLuint FindVAO(Mesh& mesh, u32 submeshIndex,const Program &program)
@@ -251,7 +176,7 @@ GLuint FindVAO(Mesh& mesh, u32 submeshIndex,const Program &program)
 		}
 		glBindVertexArray(0);
 
-		ModelLoader::VAO vao = { returnValue, program.handle };
+		VAO vao = { returnValue, program.handle };
 		subMesh.vaos.push_back(vao);
 	}
 	return returnValue;
@@ -297,9 +222,9 @@ void Init(App* app)
 	app->programUniformTexture = glGetUniformLocation(texturedGeometryProgram.handle, "uTexture");
 	app->diceTexIdx = LoadTexture2D(app, "dice.png");
 
-	ModelLoader::VertexBufferLayaout vertexBufferLayout = {};
-	vertexBufferLayout.attributes.push_back(ModelLoader::VertexBufferAttribute{0, 3, 0});
-	vertexBufferLayout.attributes.push_back(ModelLoader::VertexBufferAttribute{2, 2, 3 * sizeof(float)});
+	VertexBufferLayaout vertexBufferLayout = {};
+	vertexBufferLayout.attributes.push_back(VertexBufferAttribute{0, 3, 0});
+	vertexBufferLayout.attributes.push_back(VertexBufferAttribute{2, 2, 3 * sizeof(float)});
 	vertexBufferLayout.stride = 5 * sizeof(float);
 
 
