@@ -31,12 +31,15 @@ namespace BufferManager
         glBindBuffer(buffer.type, buffer.handle);
     }
 
+    
+
     void MapBuffer(Buffer& buffer, GLenum access)
     {
         glBindBuffer(buffer.type, buffer.handle);
         buffer.data = (u8*)glMapBuffer(buffer.type, access);
         buffer.head = 0;
     }
+
 
     void UnmapBuffer(Buffer& buffer)
     {
