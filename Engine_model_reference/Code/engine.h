@@ -75,11 +75,16 @@ struct App
 
     std::string openglDebugInfo;
 
+    
 
     GLint maxUniformBufferSize;
     GLint uniformBlockAlignment;//alignemnt entre uniform block no entre las variables
     Buffer localUniformBuffer;//donde estan todos las variables de los patricios
     std::vector<Entity> entities; // iteracion rapida
+    std::vector<Light> lights; // iteracion rapida
+
+    GLuint globalPatamsOffset;
+    GLuint globalPatamsSize;
 };
 
 void Init(App* app);

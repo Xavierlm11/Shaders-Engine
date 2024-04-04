@@ -179,6 +179,17 @@ GLuint FindVAO(Mesh& mesh, u32 submeshIndex, const Program& program)
     return ReturnValue;
 }
 
+glm::mat4 TransformScale(const vec3& scaleFactors)
+{
+    return glm::scale(scaleFactors);
+}
+
+glm::mat4 TransformPositionScale(const vec3& pos, const vec3& scaleFactors)
+{
+    glm::mat4 returnVal = glm::translate(pos);
+    returnVal = glm::scale(returnVal, scaleFactors);
+    return returnVal;
+}
 void Init(App* app)
 {
     // TODO: Initialize your resources here!
@@ -221,6 +232,7 @@ void Init(App* app)
     const Program& texturedMeshProgram = app->programs[app->texturedMeshProgramIdx];
     app->texturedMeshProgram_uTexture = glGetUniformLocation(texturedMeshProgram.handle, "uTexture");
     u32 PatrickModelindex = ModelLoader::LoadModel(app, "Patrick/Patrick.obj");
+    u32 GroundModelindex = ModelLoader::LoadModel(app, "Patrick/ground.obj");
 
     glEnable(GL_DEPTH_TEST);////////////////////////////////////////////////////////////////// PARA PROFUNDIIDAD
 
@@ -229,12 +241,15 @@ void Init(App* app)
 
      app->localUniformBuffer = CreateConstantBuffer(app->maxUniformBufferSize); // crea un uniform buffer
 
+     app->entities.push_back({TransformPositionScale(vec3(1.0,1.0,1.0),vec3(1.0,-1.0,1.0)), PatrickModelindex,0,0});
      app->entities.push_back({glm::identity<glm::mat4>(), PatrickModelindex,0,0});
      app->entities.push_back({glm::identity<glm::mat4>(), PatrickModelindex,0,0});
-     app->entities.push_back({glm::identity<glm::mat4>(), PatrickModelindex,0,0});
+
+     app->entities.push_back({glm::identity<glm::mat4>(), GroundModelindex,0,0});
 
     //app->diceTexIdx = ModelLoader::LoadTexture2D(app, "dice.png");
-
+     app->lights.push_back({ LightType::LightType_Directional,vec3(1.0,1.0,1.0),vec3(1.0,-1.0,1.0),vec3(0.0,0.0,0.0) });
+     app->lights.push_back({ LightType::LightType_Point,vec3(1.0,1.0,1.0),vec3(1.0,1.0,1.0),vec3(0.0,1.0,1.0) });
 
     app->mode = Mode_TexturedQuad;
 }
@@ -252,17 +267,6 @@ void Update(App* app)
     // You can handle app->input keyboard/mouse here
 }
 
-glm::mat4 TransformScale(const vec3& scaleFactors)
-{
-    return glm::scale(scaleFactors);
-}
-
-glm::mat4 TransformPositionScale(const vec3& pos, const vec3& scaleFactors)
-{
-    glm::mat4 returnVal = glm::translate(pos);
-    returnVal = glm::scale(returnVal, scaleFactors);
-    return returnVal;
-}
 
 void Render(App* app)
 {
@@ -283,12 +287,13 @@ void Render(App* app)
             glUseProgram(texturedMeshProgram.handle);
 
            // BufferManager::BindBuffer(app->localUniformBuffer); //ya se hace el bind auto en otro lado pero esto es mas seguro
+            glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), app->localUniformBuffer.handle, app->globalPatamsOffset, app->globalPatamsSize);
             for (auto it = app->entities.begin(); it != app->entities.end(); ++it)
             {
                
                 glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(1), app->localUniformBuffer.handle, it->localParamsOffset, it->localParamsSize); //todu creo q aqui no va, creo que es modelloading que no va
 
-                Model& model = app->models[app->patricioModel];
+                Model& model = app->models[it->modelIndex];
                 Mesh& mesh = app->meshes[model.meshIdx];
 
                 //glUniformMatrix4fv( glGetUniformLocation(texturedMeshProgram.handle, "WVP"),1,GL_FALSE, &WVP[0][0]);
@@ -337,10 +342,32 @@ void App::UpdateEntityBuffer()
     glm::mat4 view = glm::lookAt(camPos, target, yCam);
     BufferManager::MapBuffer(localUniformBuffer, GL_WRITE_ONLY);
 
+    //push lights globals paramas
+    globalPatamsOffset = localUniformBuffer.head;
+    PushVec3(localUniformBuffer, camPos);
+    PushUInt(localUniformBuffer, lights.size());
+    for (u32 i = 0; i < lights.size(); ++i)
+    {
+        BufferManager::AlignHead(localUniformBuffer, sizeof(vec4));
+
+        Light& light = lights[i];
+        PushUInt(localUniformBuffer, light.type);
+        PushVec3(localUniformBuffer, light.color);
+        PushVec3(localUniformBuffer, light.direction);
+        PushVec3(localUniformBuffer, light.position);
+    }
+
+    globalPatamsSize = localUniformBuffer.head - globalPatamsOffset;
+
+
+    //local parms
+
+    
+
     u32 iteration = 0;
     for (auto it = entities.begin(); it != entities.end(); ++it)
     {
-        glm::mat4 world = TransformPositionScale(vec3(0.f + (2.3 * iteration), 2.f, 0.f), vec3(0.45f));
+        glm::mat4 world = it->worldMatrix;
         glm::mat4 WVP = projection * view * world; //wordl view projection
         
 
