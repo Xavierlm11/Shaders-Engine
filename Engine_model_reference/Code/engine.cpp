@@ -241,9 +241,9 @@ void Init(App* app)
 
      app->localUniformBuffer = CreateConstantBuffer(app->maxUniformBufferSize); // crea un uniform buffer
 
-     app->entities.push_back({TransformPositionScale(vec3(1.0,1.0,1.0),vec3(1.0,-1.0,1.0)), PatrickModelindex,0,0});
-     app->entities.push_back({glm::identity<glm::mat4>(), PatrickModelindex,0,0});
-     app->entities.push_back({glm::identity<glm::mat4>(), PatrickModelindex,0,0});
+     app->entities.push_back({TransformPositionScale(vec3(0.5,0.0,1.0),vec3(1.0,1.0,1.0)), PatrickModelindex,0,0});
+     app->entities.push_back({TransformPositionScale(vec3(0.0,0.0,2.0),vec3(1.0,1.0,1.0)), PatrickModelindex,0,0});
+     app->entities.push_back({ TransformPositionScale(vec3(2.0,1.0,0.0),vec3(1.0,1.0,1.0)), PatrickModelindex,0,0});
 
      app->entities.push_back({glm::identity<glm::mat4>(), GroundModelindex,0,0});
 
@@ -251,7 +251,57 @@ void Init(App* app)
      app->lights.push_back({ LightType::LightType_Directional,vec3(1.0,1.0,1.0),vec3(1.0,-1.0,1.0),vec3(0.0,0.0,0.0) });
      app->lights.push_back({ LightType::LightType_Point,vec3(1.0,1.0,1.0),vec3(1.0,1.0,1.0),vec3(0.0,1.0,1.0) });
 
-    app->mode = Mode_TexturedQuad;
+
+
+     // Framebuffer
+     GLuint colorAttachmentHandle = 0;
+     glGenTextures(1, &app->colorAttachmentHandle);
+     glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle);
+     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, app->displaySize.x, app->displaySize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);  //RGBA para .si hacemos un resice que vuelva a generar el frame buff
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE); 
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
+     glBindTexture(GL_TEXTURE_2D, 0);
+
+     
+     GLuint depthAttachmentHandle = 0;
+     glGenTextures(1, &depthAttachmentHandle);
+     glBindTexture(GL_TEXTURE_2D, depthAttachmentHandle);
+     //EL BUFFEER OCUPA MAS,, si hay o¡problema scon el z fight aumentar la cantidad de bits
+     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, app->displaySize.x, app->displaySize.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);  //RGBA para .si hacemos un resice que vuelva a generar el frame buff
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+     glBindTexture(GL_TEXTURE_2D, 0);
+
+     glGenFramebuffers(1, &app->frameBufferHandle);
+     glBindFramebuffer(GL_FRAMEBUFFER, app->frameBufferHandle);
+     //glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorAttachmentHandle, 0); //se pone en 10 xq...
+     //glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthAttachmentHandle, 0);
+
+     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, app->colorAttachmentHandle, 0); //se pone en 10 xq...
+     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,  GL_TEXTURE_2D, depthAttachmentHandle, 0);
+
+     GLuint drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
+     glDrawBuffers(ARRAY_COUNT(drawBuffers), drawBuffers);
+
+
+     GLenum framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+     if (framebufferStatus != GL_FRAMEBUFFER_COMPLETE)
+     {
+         int i = 0;
+     }
+
+     //GLenum frameBufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+     /// Aqui va u nif , TUDU
+    // glDrawBuffers(1, &app->colorAttachmentHandle);
+     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    app->mode = Mode_Deferred;
 }
 
 void Gui(App* app)
@@ -272,19 +322,33 @@ void Render(App* app)
 {
     switch (app->mode)
     {
-        case Mode_TexturedQuad:
+        case Mode_Deferred:
         {
 
             app->UpdateEntityBuffer();
 
             
-            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+            glClearColor(0.f, 0.f, 0.f, .0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             glViewport(0, 0, app->displaySize.x, app->displaySize.y);
 
+
+            glBindFramebuffer(GL_FRAMEBUFFER, app->frameBufferHandle);
+
+
+          //  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, gl_texture2)
+
+            GLuint drawBuffers[] = { app->colorAttachmentHandle };
+            glDrawBuffers(ARRAY_COUNT(drawBuffers), drawBuffers);
+
+            glClearColor(0.f, 0.f, 0.f, .0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
             const Program& texturedMeshProgram = app->programs[app->texturedMeshProgramIdx];
             glUseProgram(texturedMeshProgram.handle);
+
 
            // BufferManager::BindBuffer(app->localUniformBuffer); //ya se hace el bind auto en otro lado pero esto es mas seguro
             glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), app->localUniformBuffer.handle, app->globalPatamsOffset, app->globalPatamsSize);
@@ -315,6 +379,7 @@ void Render(App* app)
                 }
                 
             }
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
             //BufferManager::UnindBuffer(app->localUniformBuffer);
         }      
         break;

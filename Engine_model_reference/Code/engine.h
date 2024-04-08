@@ -85,6 +85,9 @@ struct App
 
     GLuint globalPatamsOffset;
     GLuint globalPatamsSize;
+
+    GLuint frameBufferHandle;
+    GLuint colorAttachmentHandle;
 };
 
 void Init(App* app);

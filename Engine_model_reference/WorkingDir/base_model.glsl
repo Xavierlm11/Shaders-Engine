@@ -70,7 +70,26 @@ in vec3 vViewDir;
 
 
 uniform sampler2D uTexture;
-layout(location = 0) out vec4 oColor;
+layout(location = 0) out vec4 oColor; // aqui se podria añadir mas como onormals
+
+void CalculateBlitVars(in Light light, out vec3 ambient, out vec3 diffuse, out vec3 specular)
+{
+
+	vec3 lightDir =normalize(light.direction);
+
+	float ambientStrenght = 0.2;
+	ambient = ambientStrenght * light.color;
+			
+	float diff = max(dot(vNormal,lightDir),0.0f);
+	diffuse = diff * light.color;
+
+	float specularStrenght = 0.1f;
+	vec3 reflectDir = reflect(-lightDir,vNormal);
+	vec3 normalViewDir = normalize(vViewDir);
+	float spec = pow(max(dot(normalViewDir, reflectDir),0.0f),32);
+	specular = specularStrenght * spec * light.color;
+
+}
 
 void main()
 {
@@ -79,22 +98,19 @@ vec4 finalColor = vec4(0.0f);
 
 	for(int i=0; i< uLightCount; ++i)
 	{
-		vec3 lightDir =normalize(uLight[i].direction);
+		
 		vec3 lightResult = vec3(0.0f);
+
+		vec3 ambient = vec3(0.0);
+		vec3 diffuse = vec3(0.0);
+		vec3 specular = vec3(0.0);
+
 		if(uLight[i].type == 0) //directional light
 		{
-			Light light = uLight[i];
-			float ambientStrenght = 0.2;
-			vec3 ambient = ambientStrenght * light.color;
 			
-			float diff = max(dot(vNormal,lightDir),0.0f);
-			vec3 diffuse = diff * light.color;
+			Light light = uLight[i];
 
-			float specularStrenght = 0.1f;
-			vec3 reflectDir = reflect(-lightDir,vNormal);
-			vec3 normalViewDir = normalize(vViewDir);
-			float spec = pow(max(dot(normalViewDir, reflectDir),0.0f),32);
-			vec3 specular = specularStrenght * spec * light.color;
+			CalculateBlitVars(light, ambient, diffuse, specular);
 
 			lightResult = ambient + diffuse + specular;
 			finalColor += vec4(lightResult,1.0) * textureColor;
@@ -110,18 +126,7 @@ vec4 finalColor = vec4(0.0f);
 			float distance = length(light.position- vPosition);
 			float attenuation = 1.0/ (constant+lineal*distance+quadratic *(distance*distance));
 
-			float ambientStrenght = 0.2;
-			vec3 ambient = ambientStrenght * light.color;
-			
-			float diff = max(dot(vNormal,lightDir),0.0f);
-			vec3 diffuse = diff * light.color;
-
-			float specularStrenght = 0.1f;
-			vec3 reflectDir = reflect(-lightDir,vNormal);
-			vec3 normalViewDir = normalize(vViewDir);
-			float spec = pow(max(dot(normalViewDir, reflectDir),0.0f),32);
-			vec3 specular = specularStrenght * spec * light.color;
-
+			CalculateBlitVars(light, ambient, diffuse, specular);
 			lightResult = (ambient * attenuation) + (diffuse* attenuation) + (specular* attenuation);
 			finalColor += vec4(lightResult,1.0) * textureColor;
 		}
