@@ -228,8 +228,13 @@ void Init(App* app)
     //const Program& texturedGeometryProgram = app->programs[app->texturedGeometryProgramIdx];
     //app->programUniformTexture = glGetUniformLocation(texturedGeometryProgram.handle, "uTexture");
 
-    app->texturedMeshProgramIdx = LoadProgram(app, "base_model.glsl", "BASE_MODEL");
-    const Program& texturedMeshProgram = app->programs[app->texturedMeshProgramIdx];
+      app->renderToBackBuffer = LoadProgram(app, "RENDER_TO_BB.glsl", "RENDER_TO_BB");
+      app->renderToFrameBuffer = LoadProgram(app, "RENDER_TO_FB.glsl", "RENDER_TO_FB");
+      app->renderToQuadShader = LoadProgram(app, "RENDER_TO_QUAD.glsl", "RENDER_TO_QUAD");
+    
+    
+    
+    const Program& texturedMeshProgram = app->programs[app->renderToBackBuffer];
     app->texturedMeshProgram_uTexture = glGetUniformLocation(texturedMeshProgram.handle, "uTexture");
     u32 PatrickModelindex = ModelLoader::LoadModel(app, "Patrick/Patrick.obj");
     u32 GroundModelindex = ModelLoader::LoadModel(app, "Patrick/ground.obj");
@@ -252,54 +257,7 @@ void Init(App* app)
      app->lights.push_back({ LightType::LightType_Point,vec3(1.0,1.0,1.0),vec3(1.0,1.0,1.0),vec3(0.0,1.0,1.0) });
 
 
-
-     // Framebuffer
-     GLuint colorAttachmentHandle = 0;
-     glGenTextures(1, &app->colorAttachmentHandle);
-     glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle);
-     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, app->displaySize.x, app->displaySize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);  //RGBA para .si hacemos un resice que vuelva a generar el frame buff
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE); 
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
-     glBindTexture(GL_TEXTURE_2D, 0);
-
-     
-     GLuint depthAttachmentHandle = 0;
-     glGenTextures(1, &depthAttachmentHandle);
-     glBindTexture(GL_TEXTURE_2D, depthAttachmentHandle);
-     //EL BUFFEER OCUPA MAS,, si hay o¡problema scon el z fight aumentar la cantidad de bits
-     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, app->displaySize.x, app->displaySize.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);  //RGBA para .si hacemos un resice que vuelva a generar el frame buff
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-     glBindTexture(GL_TEXTURE_2D, 0);
-
-     glGenFramebuffers(1, &app->frameBufferHandle);
-     glBindFramebuffer(GL_FRAMEBUFFER, app->frameBufferHandle);
-     //glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorAttachmentHandle, 0); //se pone en 10 xq...
-     //glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthAttachmentHandle, 0);
-
-     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, app->colorAttachmentHandle, 0); //se pone en 10 xq...
-     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,  GL_TEXTURE_2D, depthAttachmentHandle, 0);
-
-     GLuint drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
-     glDrawBuffers(ARRAY_COUNT(drawBuffers), drawBuffers);
-
-
-     GLenum framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-     if (framebufferStatus != GL_FRAMEBUFFER_COMPLETE)
-     {
-         int i = 0;
-     }
-
-     //GLenum frameBufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-     /// Aqui va u nif , TUDU
-    // glDrawBuffers(1, &app->colorAttachmentHandle);
-     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+     app->ConfigureFrameBuffer(app->defferedFrameBuffer);
 
     app->mode = Mode_Deferred;
 }
@@ -309,6 +267,31 @@ void Gui(App* app)
     ImGui::Begin("Info");
     ImGui::Text("FPS: %f", 1.0f/app->deltaTime);
     ImGui::Text("%s", app->openglDebugInfo.c_str());
+
+    const char* renderModes[] = { "FORWARD","DEFERRED" };
+    if (ImGui::BeginCombo("Render Mode", renderModes[app->mode]))
+    {
+        for (size_t i = 0; i < ARRAY_COUNT(renderModes); ++i)
+        {
+            bool isSelected = (i == app->mode);
+            if (ImGui::Selectable(renderModes[i],isSelected)) //recordar esto no va bien
+            {
+
+                app->mode = static_cast<Mode>(i);
+            }
+        }
+        
+        ImGui::EndCombo();
+    }
+    if (app->mode == Mode::Mode_Deferred)
+    {
+
+        for (size_t i = 0; i < app->defferedFrameBuffer.colorAttachment.size(); i++)
+        {
+            ImGui::Image((ImTextureID)app->defferedFrameBuffer.colorAttachment[i], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
+        }
+
+    }
     ImGui::End();
 }
 
@@ -322,7 +305,7 @@ void Render(App* app)
 {
     switch (app->mode)
     {
-        case Mode_Deferred:
+        case Mode_Forward:
         {
 
             app->UpdateEntityBuffer();
@@ -330,60 +313,47 @@ void Render(App* app)
             
             glClearColor(0.f, 0.f, 0.f, .0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 
             glViewport(0, 0, app->displaySize.x, app->displaySize.y);
+            glBindFramebuffer(GL_FRAMEBUFFER, app->defferedFrameBuffer.fbHandle);
+
+            const Program& ForwardProgram = app->programs[app->renderToFrameBuffer];
+            glUseProgram(ForwardProgram.handle);
+
+           app->RenderGeometry(ForwardProgram);
+            
+            //BufferManager::UnindBuffer(app->localUniformBuffer);
+        }      
+        break;
+        case Mode_Deferred:
+        {
+
+            app->UpdateEntityBuffer();
 
 
-            glBindFramebuffer(GL_FRAMEBUFFER, app->frameBufferHandle);
+            glClearColor(0.f, 0.f, 0.f, .0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+            glViewport(0, 0, app->displaySize.x, app->displaySize.y);
+            glBindFramebuffer(GL_FRAMEBUFFER, app->defferedFrameBuffer.fbHandle);
 
-          //  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, gl_texture2)
-
-            GLuint drawBuffers[] = { app->colorAttachmentHandle };
-            glDrawBuffers(ARRAY_COUNT(drawBuffers), drawBuffers);
+            glDrawBuffers(app->defferedFrameBuffer.colorAttachment.size(), app->defferedFrameBuffer.colorAttachment.data());
 
             glClearColor(0.f, 0.f, 0.f, .0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-            const Program& texturedMeshProgram = app->programs[app->texturedMeshProgramIdx];
-            glUseProgram(texturedMeshProgram.handle);
+            const Program& DeferredProgram = app->programs[app->renderToFrameBuffer];
+            glUseProgram(DeferredProgram.handle);
 
 
-           // BufferManager::BindBuffer(app->localUniformBuffer); //ya se hace el bind auto en otro lado pero esto es mas seguro
-            glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), app->localUniformBuffer.handle, app->globalPatamsOffset, app->globalPatamsSize);
-            for (auto it = app->entities.begin(); it != app->entities.end(); ++it)
-            {
-               
-                glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(1), app->localUniformBuffer.handle, it->localParamsOffset, it->localParamsSize); //todu creo q aqui no va, creo que es modelloading que no va
-
-                Model& model = app->models[it->modelIndex];
-                Mesh& mesh = app->meshes[model.meshIdx];
-
-                //glUniformMatrix4fv( glGetUniformLocation(texturedMeshProgram.handle, "WVP"),1,GL_FALSE, &WVP[0][0]);
-
-                for (u32 i = 0; i < mesh.submeshes.size(); ++i)
-                {
-                    GLuint vao = FindVAO(mesh, i, texturedMeshProgram);
-                    glBindVertexArray(vao);
-
-                    u32 subMeshmaterialIdx = model.materialIdx[i];
-                    Material& subMeshMaterial = app->materials[subMeshmaterialIdx];
-
-                    glActiveTexture(GL_TEXTURE0);
-                    glBindTexture(GL_TEXTURE_2D, app->textures[subMeshMaterial.albedoTextureIdx].handle);
-                    glUniform1i(app->texturedMeshProgram_uTexture, 0);
-
-                    SubMesh& submesh = mesh.submeshes[i];
-                    glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
-                }
-                
-            }
+            app->RenderGeometry(DeferredProgram);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             //BufferManager::UnindBuffer(app->localUniformBuffer);
-        }      
+        }
         break;
-
         default:;
     }
 }
@@ -445,4 +415,101 @@ void App::UpdateEntityBuffer()
     ++iteration;
     }
     BufferManager::UnmapBuffer(localUniformBuffer);
+}
+
+void App::ConfigureFrameBuffer( FrameBuffer& aConfigFb)
+{
+    GLuint NUMBER_OF_CA = 3; // esto cambeir si se añaden en el shader
+    for (size_t i = 0; i < NUMBER_OF_CA; ++i)
+    {
+        // Framebuffer
+        GLuint nColorAttachment = 0;
+        glGenTextures(1, &nColorAttachment);
+        glBindTexture(GL_TEXTURE_2D, nColorAttachment);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, displaySize.x, displaySize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);  //RGBA para .si hacemos un resice que vuelva a generar el frame buff
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        aConfigFb.colorAttachment.push_back(nColorAttachment);
+
+
+    }
+    
+    glGenTextures(1, &aConfigFb.depthHandle);
+    glBindTexture(GL_TEXTURE_2D, aConfigFb.depthHandle);
+    //EL BUFFEER OCUPA MAS,, si hay o¡problema scon el z fight aumentar la cantidad de bits
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, displaySize.x, displaySize.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);  //RGBA para .si hacemos un resice que vuelva a generar el frame buff
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glGenFramebuffers(1, &aConfigFb.fbHandle);
+    glBindFramebuffer(GL_FRAMEBUFFER, aConfigFb.fbHandle);
+    
+    std::vector<GLuint> drawBuffers;
+    for (size_t i = 0; i < NUMBER_OF_CA; ++i)
+    {
+        GLuint position = GL_COLOR_ATTACHMENT0 + i;
+        glFramebufferTexture(GL_FRAMEBUFFER, position, aConfigFb.colorAttachment[i], 0);
+        drawBuffers.push_back(position);
+    }
+
+   // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, aConfigFb.fbHandle, 0); //se pone en 10 xq...
+    //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, aConfigFb.fbHandle, 0);
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, aConfigFb.depthHandle, 0);
+    
+    glDrawBuffers(drawBuffers.size(), drawBuffers.data());
+
+
+    GLenum framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (framebufferStatus != GL_FRAMEBUFFER_COMPLETE)
+    {
+        int i = 0;
+    }
+
+    //GLenum frameBufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    /// Aqui va u nif , TUDU
+   // glDrawBuffers(1, &app->colorAttachmentHandle);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+}
+
+void App::RenderGeometry(const Program& aBindedProgram)
+{
+    glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), localUniformBuffer.handle, globalPatamsOffset, globalPatamsSize);
+    for (auto it = entities.begin(); it != entities.end(); ++it)
+    {
+
+        glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(1), localUniformBuffer.handle, it->localParamsOffset, it->localParamsSize); //todu creo q aqui no va, creo que es modelloading que no va
+
+        Model& model = models[it->modelIndex];
+        Mesh& mesh = meshes[model.meshIdx];
+
+        //glUniformMatrix4fv( glGetUniformLocation(texturedMeshProgram.handle, "WVP"),1,GL_FALSE, &WVP[0][0]);
+
+        for (u32 i = 0; i < mesh.submeshes.size(); ++i)
+        {
+            GLuint vao = FindVAO(mesh, i, aBindedProgram);
+            glBindVertexArray(vao);
+
+            u32 subMeshmaterialIdx = model.materialIdx[i];
+            Material& subMeshMaterial = materials[subMeshmaterialIdx];
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D,textures[subMeshMaterial.albedoTextureIdx].handle);
+            glUniform1i(texturedMeshProgram_uTexture, 0);
+
+            SubMesh& submesh = mesh.submeshes[i];
+            glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
+        }
+
+    }
+
 }

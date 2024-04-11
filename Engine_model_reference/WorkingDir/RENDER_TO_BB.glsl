@@ -1,4 +1,4 @@
-#ifdef BASE_MODEL
+#ifdef RENDER_TO_BB
 
 #if defined(VERTEX) ///////////////////////////////////////////////////
 
@@ -70,7 +70,7 @@ in vec3 vViewDir;
 
 
 uniform sampler2D uTexture;
-layout(location = 0) out vec4 oColor; // aqui se podria añadir mas como onormals
+layout(location = 0) out vec4 oColor; // aqui se podria aï¿½adir mas como onormals
 
 void CalculateBlitVars(in Light light, out vec3 ambient, out vec3 diffuse, out vec3 specular)
 {

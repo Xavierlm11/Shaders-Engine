@@ -26,6 +26,10 @@ struct App
 {
     void UpdateEntityBuffer();
 
+    void ConfigureFrameBuffer( FrameBuffer &aConfigFb);
+
+    void RenderGeometry(const Program& aBindedProgram);
+
     // Loop
     f32  deltaTime;
     bool isRunning;
@@ -46,8 +50,9 @@ struct App
     std::vector<Program>    programs;
 
     // program indices
-    u32 texturedGeometryProgramIdx = 0;
-    u32 texturedMeshProgramIdx = 0;
+    GLuint renderToBackBuffer;
+        GLuint renderToFrameBuffer;
+        GLuint renderToQuadShader;
 
     u32 patricioModel = 0;
     GLuint texturedMeshProgram_uTexture;
@@ -86,8 +91,7 @@ struct App
     GLuint globalPatamsOffset;
     GLuint globalPatamsSize;
 
-    GLuint frameBufferHandle;
-    GLuint colorAttachmentHandle;
+    FrameBuffer defferedFrameBuffer;
 };
 
 void Init(App* app);
