@@ -72,13 +72,14 @@ uniform sampler2D uTexture;
 layout(location = 0) out vec4 oAlbedo; // aqui se podria a�adir mas como onormals
 layout(location = 1) out vec4 oNormals;
 layout(location = 2) out vec4 oPosition;
-
+layout(location = 3) out vec4 oViewDir;
 
 void main()
 {
 	oAlbedo = texture(uTexture, vTexCoord);
 	oNormals = vec4(vNormal, 1.0);
 	oPosition = vec4(vPosition, 1.0);
+	oViewDir = vec4(vViewDir,1.0);
 }
 
 #endif
