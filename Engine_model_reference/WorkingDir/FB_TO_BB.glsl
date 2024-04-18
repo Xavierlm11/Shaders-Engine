@@ -33,8 +33,8 @@ in vec2 vTexCoord;
 
 uniform sampler2D uAlbedo;
 uniform sampler2D uNormals;
+uniform sampler2D uPosition;
 uniform sampler2D uViewDir;
-uniform sampler2D uTexture;
 
 layout(location = 0) out vec4 oColor; // aqui se podria a�adir mas como onormals
 

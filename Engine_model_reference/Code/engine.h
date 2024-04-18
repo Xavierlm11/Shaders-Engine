@@ -10,90 +10,90 @@
 #include "Globals.h"
 
 const VertexV3V2 vertices[] = {
-    {glm::vec3(-1.0,-1.0,0.0), glm::vec2(0.0,0.0)},
-    {glm::vec3(1.0,-1.0,0.0), glm::vec2(1.0,0.0)},
-    {glm::vec3(1.0,1.0,0.0), glm::vec2(1.0,1.0)},
-    {glm::vec3(-1.0,1.0,0.0), glm::vec2(0.0,1.0)},
+	{glm::vec3(-1.0,-1.0,0.0), glm::vec2(0.0,0.0)},
+	{glm::vec3(1.0,-1.0,0.0), glm::vec2(1.0,0.0)},
+	{glm::vec3(1.0,1.0,0.0), glm::vec2(1.0,1.0)},
+	{glm::vec3(-1.0,1.0,0.0), glm::vec2(0.0,1.0)},
 };
 
 const u16 indices[] =
 {
-    0,1,2,
-    0,2,3
+	0,1,2,
+	0,2,3
 };
 
 struct App
 {
-    void UpdateEntityBuffer();
+	void UpdateEntityBuffer();
 
-    void ConfigureFrameBuffer( FrameBuffer &aConfigFb);
+	void ConfigureFrameBuffer(FrameBuffer& aConfigFb);
 
-    void RenderGeometry(const Program& aBindedProgram);
+	void RenderGeometry(const Program& aBindedProgram);
 
-    const GLuint CreateTexture(const bool isFloatingPoint = false);
+	const GLuint CreateTexture(const bool isFloatingPoint = false);
 
-    // Loop
-    f32  deltaTime;
-    bool isRunning;
+	// Loop
+	f32  deltaTime;
+	bool isRunning;
 
-    // Input
-    Input input;
+	// Input
+	Input input;
 
-    // Graphics
-    char gpuName[64];
-    char openGlVersion[64];
+	// Graphics
+	char gpuName[64];
+	char openGlVersion[64];
 
-    ivec2 displaySize;
+	ivec2 displaySize;
 
-    std::vector<Texture>    textures;
-    std::vector<Material>   materials;
-    std::vector<Mesh>       meshes;
-    std::vector<Model>      models;
-    std::vector<Program>    programs;
+	std::vector<Texture>    textures;
+	std::vector<Material>   materials;
+	std::vector<Mesh>       meshes;
+	std::vector<Model>      models;
+	std::vector<Program>    programs;
 
-    // program indices
-    GLuint renderToBackBuffer;
-        GLuint renderToFrameBuffer;
-        GLuint renderToQuadShader;
+	// program indices
+	GLuint renderToBackBuffer;
+	GLuint renderToFrameBuffer;
+	GLuint renderToQuadShader;
 
-    u32 patricioModel = 0;
-    GLuint texturedMeshProgram_uTexture;
-    
-    // texture indices
-    u32 diceTexIdx;
-    u32 whiteTexIdx;
-    u32 blackTexIdx;
-    u32 normalTexIdx;
-    u32 magentaTexIdx;
+	u32 patricioModel = 0;
+	GLuint texturedMeshProgram_uTexture;
 
-    // Mode
-    Mode mode;
+	// texture indices
+	u32 diceTexIdx;
+	u32 whiteTexIdx;
+	u32 blackTexIdx;
+	u32 normalTexIdx;
+	u32 magentaTexIdx;
 
-    // Embedded geometry (in-editor simple meshes such as
-    // a screen filling quad, a cube, a sphere...)
-    GLuint embeddedVertices;
-    GLuint embeddedElements;
+	// Mode
+	Mode mode;
 
-    // Location of the texture uniform in the textured quad shader
-    GLuint programUniformTexture;
+	// Embedded geometry (in-editor simple meshes such as
+	// a screen filling quad, a cube, a sphere...)
+	GLuint embeddedVertices;
+	GLuint embeddedElements;
 
-    // VAO object to link our screen filling quad with our textured quad shader
-    GLuint vao;
+	// Location of the texture uniform in the textured quad shader
+	GLuint programUniformTexture;
 
-    std::string openglDebugInfo;
+	// VAO object to link our screen filling quad with our textured quad shader
+	GLuint vao;
 
-    
+	std::string openglDebugInfo;
 
-    GLint maxUniformBufferSize;
-    GLint uniformBlockAlignment;//alignemnt entre uniform block no entre las variables
-    Buffer localUniformBuffer;//donde estan todos las variables de los patricios
-    std::vector<Entity> entities; // iteracion rapida
-    std::vector<Light> lights; // iteracion rapida
 
-    GLuint globalPatamsOffset;
-    GLuint globalPatamsSize;
 
-    FrameBuffer defferedFrameBuffer;
+	GLint maxUniformBufferSize;
+	GLint uniformBlockAlignment;//alignemnt entre uniform block no entre las variables
+	Buffer localUniformBuffer;//donde estan todos las variables de los patricios
+	std::vector<Entity> entities; // iteracion rapida
+	std::vector<Light> lights; // iteracion rapida
+
+	GLuint globalPatamsOffset;
+	GLuint globalPatamsSize;
+
+	FrameBuffer defferedFrameBuffer;
 };
 
 void Init(App* app);
