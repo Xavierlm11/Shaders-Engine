@@ -18,7 +18,7 @@ struct Light
 	vec3 position;
 };
 
-layout(binding=0, std140) uniform GlobalParams
+layout(binding=0, std140) uniform GlobalsParams
 {
 	vec3 uCamPosition;
 	uint uLightCount;
@@ -56,7 +56,7 @@ struct Light
 	vec3 position;
 };
 
-layout(binding=0, std140) uniform GlobalParams
+layout(binding=0, std140) uniform GlobalsParams
 {
 	vec3 uCamPosition;
 	uint uLightCount;
@@ -98,9 +98,9 @@ vec4 finalColor = vec4(0.0f);
 
 	for(int i=0; i< uLightCount; ++i)
 	{
-		
-		vec3 lightResult = vec3(0.0f);
+		Light light = uLight[i];
 
+		vec3 lightResult = vec3(0.0f);
 		vec3 ambient = vec3(0.0);
 		vec3 diffuse = vec3(0.0);
 		vec3 specular = vec3(0.0);
@@ -108,8 +108,6 @@ vec4 finalColor = vec4(0.0f);
 		if(uLight[i].type == 0) //directional light
 		{
 			
-			Light light = uLight[i];
-
 			CalculateBlitVars(light, ambient, diffuse, specular);
 
 			lightResult = ambient + diffuse + specular;
@@ -118,17 +116,17 @@ vec4 finalColor = vec4(0.0f);
 		}
 		else //point light, Todo podria ser una funcio
 		{
-			Light light = uLight[i];
-
+	
 			float constant = 1.0f;
 			float lineal = 0.09f;
 			float quadratic = 0.032f;
 			float distance = length(light.position- vPosition);
-			float attenuation = 1.0/ (constant+lineal*distance+quadratic *(distance*distance));
+			float attenuation = 1.0/ (constant + lineal * distance + quadratic * (distance * distance));
 
 			CalculateBlitVars(light, ambient, diffuse, specular);
-			lightResult = (ambient * attenuation) + (diffuse* attenuation) + (specular* attenuation);
-			finalColor += vec4(lightResult,1.0) * textureColor;
+
+			lightResult = (ambient * attenuation) + (diffuse * attenuation) + (specular * attenuation);
+			finalColor += vec4(lightResult, 1.0) * textureColor;
 		}
 	}
 

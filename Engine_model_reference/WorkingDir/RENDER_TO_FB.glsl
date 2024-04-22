@@ -5,9 +5,6 @@
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec2 aTexCoord;
-//layout(location = 3) in vec3 aTangent;
-//layout(location = 4) in vec3 aBitangent;
-
 
 struct Light
 {
@@ -17,14 +14,14 @@ struct Light
 	vec3 position;
 };
 
-layout(binding=0, std140) uniform GlobalParams
+layout(binding = 0, std140) uniform GlobalsParams
 {
 	vec3 uCamPosition;
 	uint uLightCount;
 	Light uLight[16];
 };
 
-layout(binding=1,std140) uniform localParams
+layout(binding = 1,std140) uniform localParams
 {
 	mat4 uWorldMatrix;
 	mat4 uWorldViewProjectionMatrix;
@@ -55,7 +52,7 @@ struct Light
 	vec3 position;
 };
 
-layout(binding=0, std140) uniform GlobalParams
+layout(binding = 0, std140) uniform GlobalsParams
 {
 	vec3 uCamPosition;
 	uint uLightCount;

@@ -54,7 +54,7 @@ struct App
 	// program indices
 	GLuint renderToBackBuffer;
 	GLuint renderToFrameBuffer;
-	GLuint renderToQuadShader;
+	GLuint FrameBufferToQuadShader;
 
 	u32 patricioModel = 0;
 	GLuint texturedMeshProgram_uTexture;
