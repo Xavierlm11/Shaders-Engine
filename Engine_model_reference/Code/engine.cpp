@@ -238,8 +238,6 @@ void Init(App* app)
 	app->renderToFrameBuffer = LoadProgram(app, "RENDER_TO_FB.glsl", "RENDER_TO_FB");
 	app->FrameBufferToQuadShader = LoadProgram(app, "FB_TO_BB.glsl", "FB_TO_BB");
 
-
-
 	const Program& texturedMeshProgram = app->programs[app->renderToBackBuffer];
 	app->texturedMeshProgram_uTexture = glGetUniformLocation(texturedMeshProgram.handle, "uTexture");
 	u32 PatrickModelindex = ModelLoader::LoadModel(app, "Patrick/Patrick.obj");
@@ -369,15 +367,15 @@ void Render(App* app)
 		glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[0]);
 		glUniform1i(glGetUniformLocation(FBToBB.handle, "uAlbedo"), 0);
 
-		glActiveTexture(GL_TEXTURE0);
+		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[1]);
 		glUniform1i(glGetUniformLocation(FBToBB.handle, "uNormals"), 1);
 
-		glActiveTexture(GL_TEXTURE0);
+		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[2]);
 		glUniform1i(glGetUniformLocation(FBToBB.handle, "uPosition"), 2);
 
-		glActiveTexture(GL_TEXTURE0);
+		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[3]);
 		glUniform1i(glGetUniformLocation(FBToBB.handle, "uViewDir"), 3);
 		
