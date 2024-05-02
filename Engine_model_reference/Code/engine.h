@@ -94,6 +94,8 @@ struct App
 	GLuint globalPatamsSize;
 
 	FrameBuffer defferedFrameBuffer;
+
+	vec3 camPos = vec3(5.0, 5.0, 5.0);
 };
 
 void Init(App* app);

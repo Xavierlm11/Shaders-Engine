@@ -303,6 +303,25 @@ void Gui(App* app)
 void Update(App* app)
 {
 	// You can handle app->input keyboard/mouse here
+
+	if (app->input.keys[Key::K_W] == ButtonState::BUTTON_PRESSED)
+	{
+		//app->camPos. += 
+	}
+	if (app->input.keys[Key::K_A] == ButtonState::BUTTON_PRESSED)
+	{
+
+	}
+	if (app->input.keys[Key::K_S] == ButtonState::BUTTON_PRESSED)
+	{
+
+	}
+	if (app->input.keys[Key::K_D] == ButtonState::BUTTON_PRESSED)
+	{
+
+	}
+
+
 }
 
 
@@ -403,7 +422,7 @@ void App::UpdateEntityBuffer()
 	glm::mat4 projection = glm::perspective(glm::radians(60.0f), aspectRatio, zNear, zFar);
 
 	vec3 target = vec3(0.f, 0.f, 0.f);
-	vec3 camPos = vec3(5.0, 5.0, 5.0);
+	//vec3 camPos = vec3(5.0, 5.0, 5.0);
 
 
 	vec3 zCam = glm::normalize(camPos - target);
