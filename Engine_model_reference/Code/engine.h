@@ -83,7 +83,6 @@ struct App
 	std::string openglDebugInfo;
 
 
-
 	GLint maxUniformBufferSize;
 	GLint uniformBlockAlignment;//alignemnt entre uniform block no entre las variables
 	Buffer localUniformBuffer;//donde estan todos las variables de los patricios
@@ -96,6 +95,8 @@ struct App
 	FrameBuffer defferedFrameBuffer;
 
 	vec3 camPos = vec3(5.0, 5.0, 5.0);
+
+	float iTime=0;
 };
 
 void Init(App* app);

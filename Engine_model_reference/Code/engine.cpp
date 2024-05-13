@@ -201,13 +201,13 @@ void Init(App* app)
 
 	//Get OPENGL info.
 	app->openglDebugInfo += "OpeGL version:\n" + std::string(reinterpret_cast<const char*>(glGetString(GL_VERSION)));
-	
+
 	//VBO
 	glGenBuffers(1, &app->embeddedVertices);
 	glBindBuffer(GL_ARRAY_BUFFER, app->embeddedVertices);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
+
 	//ebo
 	glGenBuffers(1, &app->embeddedElements);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, app->embeddedElements);
@@ -226,7 +226,7 @@ void Init(App* app)
 	glEnableVertexAttribArray(1);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, app->embeddedElements);
 	glBindVertexArray(0);
-	
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	//app->texturedGeometryProgramIdx = LoadProgram(app, "shaders.glsl", "TEXTURED_GEOMETRY");
@@ -303,22 +303,23 @@ void Gui(App* app)
 void Update(App* app)
 {
 	// You can handle app->input keyboard/mouse here
-
+	float sensivity = 1.4f;
+	float movement = 1.0 * sensivity;
 	if (app->input.keys[Key::K_W] == ButtonState::BUTTON_PRESSED)
 	{
-		//app->camPos. += 
+		
 	}
 	if (app->input.keys[Key::K_A] == ButtonState::BUTTON_PRESSED)
 	{
-
+		
 	}
 	if (app->input.keys[Key::K_S] == ButtonState::BUTTON_PRESSED)
 	{
-
+		
 	}
 	if (app->input.keys[Key::K_D] == ButtonState::BUTTON_PRESSED)
 	{
-
+		
 	}
 
 
@@ -378,7 +379,7 @@ void Render(App* app)
 
 		const Program& FBToBB = app->programs[app->FrameBufferToQuadShader];
 		glUseProgram(FBToBB.handle);
-		
+
 		/////
 		glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), app->localUniformBuffer.handle, app->globalPatamsOffset, app->globalPatamsSize);
 
@@ -397,7 +398,7 @@ void Render(App* app)
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[3]);
 		glUniform1i(glGetUniformLocation(FBToBB.handle, "uViewDir"), 3);
-		
+
 
 		glBindVertexArray(app->vao);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
@@ -530,7 +531,7 @@ void App::RenderGeometry(const Program& aBindedProgram)
 		Model& model = models[it->modelIndex];
 		Mesh& mesh = meshes[model.meshIdx];
 
-	
+
 		for (u32 i = 0; i < mesh.submeshes.size(); ++i)
 		{
 			GLuint vao = FindVAO(mesh, i, aBindedProgram);
@@ -551,7 +552,7 @@ void App::RenderGeometry(const Program& aBindedProgram)
 
 }
 
-const GLuint App::CreateTexture(const bool isFloatingPoint )
+const GLuint App::CreateTexture(const bool isFloatingPoint)
 {
 	GLuint textureHandle;
 
