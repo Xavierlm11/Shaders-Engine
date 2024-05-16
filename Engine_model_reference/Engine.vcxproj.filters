@@ -121,5 +121,8 @@
     <None Include="WorkingDir\FB_TO_BB.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="PRGrid.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

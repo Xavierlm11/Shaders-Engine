@@ -55,7 +55,7 @@ struct App
 	GLuint renderToBackBuffer;
 	GLuint renderToFrameBuffer;
 	GLuint FrameBufferToQuadShader;
-
+	GLuint grindRenderShader;
 	u32 patricioModel = 0;
 	GLuint texturedMeshProgram_uTexture;
 
@@ -111,6 +111,16 @@ struct App
 		
 	};
 
+	struct Camera2
+	{
+		float fovYRad = 0.0;
+		float aspRatio = 0.0;
+		float zFar = 1000.0;
+		float zNear = 0.1;
+
+		vec4 GetTopBottomLeftRight();
+	};
+	Camera2 cam2;
 	Camera cam;//camera
 
 	float iTime=0;

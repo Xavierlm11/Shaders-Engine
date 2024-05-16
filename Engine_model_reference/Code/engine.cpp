@@ -237,6 +237,7 @@ void Init(App* app)
 
 	app->renderToFrameBuffer = LoadProgram(app, "RENDER_TO_FB.glsl", "RENDER_TO_FB");
 	app->FrameBufferToQuadShader = LoadProgram(app, "FB_TO_BB.glsl", "FB_TO_BB");
+	//app->grindRenderShader = LoadProgram(app, "PRGrid.glsl", "GRID_SHADER");
 
 	const Program& texturedMeshProgram = app->programs[app->renderToBackBuffer];
 	app->texturedMeshProgram_uTexture = glGetUniformLocation(texturedMeshProgram.handle, "uTexture");
@@ -382,10 +383,7 @@ void Update(App* app)
 		// Actualizar dirección frontal (front)
 		
 
-		// Actualizar dirección hacia arriba (up)
-		// Aquí asumimos que la dirección hacia arriba es (0,1,0) en el espacio global
-		// Si quieres permitir que la cámara pueda rotar completamente, puedes calcular el up como el resultado del producto cruzado entre el vector de dirección frontal y el vector "derecha" (right).
-		//app->cam.right = normalize(cross(app->cam.front, app->cam.up));
+	//app->cam.right = normalize(cross(app->cam.front, app->cam.up));
 		//app->cam.up = normalize(cross(app->cam.right, app->cam.front));
 	
 
@@ -444,8 +442,48 @@ void Render(App* app)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glViewport(0, 0, app->displaySize.x, app->displaySize.y);
 
+		//////RenderGrid
+		//GLuint drawBuffers[] = { GL_COLOR_ATTACHMENT4 };
+		//glDrawBuffers(1, drawBuffers);
+
+		//glEnable(GL_DEPTH_TEST);
+		//glEnable(GL_BLEND);
+		//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		//
+		//GLuint gridHandle = app->programs[app->grindRenderShader].handle;
+		//glUseProgram(gridHandle);
+
+		//vec4 tblr = app->cam2.GetTopBottomLeftRight();
+		//glUniform1f(glGetUniformLocation(gridHandle, "left"),tblr.x );
+		//glUniform1f(glGetUniformLocation(gridHandle, "right"), tblr.y);
+		//glUniform1f(glGetUniformLocation(gridHandle, "bottom"), tblr.z);
+		//glUniform1f(glGetUniformLocation(gridHandle, "top"), tblr.w);
+		//glUniform1f(glGetUniformLocation(gridHandle, "znear"), app->cam2.zNear);
+		//
+		//glm::mat4 transMat = glm::translate(glm::mat4(1.0f), app->cam.position);
+		//glm::mat4 yawMat = glm::rotate(glm::mat4(1.0), glm::radians(app->cam.yaw), glm::vec3(0, 1, 0));
+		//glm::mat4 pitchMat = glm::rotate(glm::mat4(1.0), glm::radians(app->cam.pitch), glm::vec3(1, 0, 0));
+		//glm::mat4 rotationMat = yawMat * pitchMat;
+		//glm::mat4 
+
+		//glUniformMatrix4fv(glGetUniformLocation(gridHandle, "worldMatrix"),1, );
+		////glUniformMatrix4fv(glGetUniformLocation(gridHandle, "viewMatrix"),1, );
+
+		//glBindVertexArray(app->vao);
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+
+		//glBindVertexArray(0);
+		//glUseProgram(0);
+
+		//////
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDisable(GL_BLEND);
+
+
 		const Program& FBToBB = app->programs[app->FrameBufferToQuadShader];
 		glUseProgram(FBToBB.handle);
+
+
 
 		/////
 		glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), app->localUniformBuffer.handle, app->globalPatamsOffset, app->globalPatamsSize);
@@ -484,10 +522,9 @@ void Render(App* app)
 void App::UpdateEntityBuffer()
 {
 
-	float aspectRatio = (float)displaySize.x / (float)displaySize.y;
-	float zNear = 0.1f;
-	float zFar = 1000.0f;
-	glm::mat4 projection = glm::perspective(glm::radians(60.0f), aspectRatio, zNear, zFar);
+	cam2.aspRatio = (float)displaySize.x / (float)displaySize.y;
+	cam2.fovYRad = glm::radians(60.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(60.0f), cam2.aspRatio, cam2.zNear, cam2.zFar);
 
 	vec3 target = vec3(0.f, 0.f, 0.f);
 	//vec3 camPos = vec3(5.0, 5.0, 5.0);
@@ -546,6 +583,7 @@ void App::ConfigureFrameBuffer(FrameBuffer& aConfigFb)
 	aConfigFb.colorAttachment.push_back(CreateTexture(true));
 	aConfigFb.colorAttachment.push_back(CreateTexture(true));
 	aConfigFb.colorAttachment.push_back(CreateTexture(true));
+	aConfigFb.colorAttachment.push_back(CreateTexture());
 
 	glGenTextures(1, &aConfigFb.depthHandle);
 	glBindTexture(GL_TEXTURE_2D, aConfigFb.depthHandle);
@@ -639,3 +677,22 @@ const GLuint App::CreateTexture(const bool isFloatingPoint)
 
 	return textureHandle;
 }
+
+//vec4 App::Camera2::GetTopBottomLeftRight() //tudo
+//{
+//	vec4 returnValue;
+//
+//	//top
+//	returnValue.x = tan(fovYRad / 2) * zNear;
+//	//top
+//	returnValue.y =-returnValue.y;
+//	//top
+//	returnValue.z = returnValue.x * aspRatio;
+//	//top
+//	returnValue.w = tan(fovYRad / 2) * zNear;
+//
+//
+//	return vec4();
+//}
+
+
