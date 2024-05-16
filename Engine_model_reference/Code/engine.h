@@ -94,7 +94,24 @@ struct App
 
 	FrameBuffer defferedFrameBuffer;
 
+
+
 	vec3 camPos = vec3(5.0, 5.0, 5.0);
+
+	struct Camera {
+		vec3 position;
+		vec3 target;
+		vec3 up;
+		vec3 right;
+		vec3 front;
+		float speed;
+		float sensitivity;
+		float yaw;
+		float pitch;
+		
+	};
+
+	Camera cam;//camera
 
 	float iTime=0;
 };

@@ -10,7 +10,7 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 #include "Globals.h"
-
+#include <glm/glm.hpp>
 GLuint CreateProgramFromSource(String programSource, const char* shaderName)
 {
 	GLchar  infoLogBuffer[1024] = {};
@@ -264,6 +264,14 @@ void Init(App* app)
 
 	app->ConfigureFrameBuffer(app->defferedFrameBuffer);
 
+	app->cam.position = vec3(9.0f, 2.0f, 15.0f);
+	app->cam.target = vec3(0.0f, 0.0f, -1.0f);
+	app->cam.up = vec3(0.0f, 1.0f, 0.0f);
+	app->cam.speed = 0.1f;
+	app->cam.sensitivity = 0.05f;
+	app->cam.front = vec3(0.0f, 0.0f, -1.0f);
+
+
 	app->mode = Mode_Deferred;
 }
 
@@ -303,26 +311,85 @@ void Gui(App* app)
 void Update(App* app)
 {
 	// You can handle app->input keyboard/mouse here
+	bool movingCam = false;
 	float sensivity = 1.4f;
 	float movement = 1.0 * sensivity;
-	if (app->input.keys[Key::K_W] == ButtonState::BUTTON_PRESSED)
+
+	float mouseSensitivity = 0.1f; // Sensibilidad del ratón (ajustar según sea necesario)
+
+	static double lastMouseX = app->input.mousePos.x;
+	static double lastMouseY = app->input.mousePos.y;
+	double deltaX = app->input.mousePos.x - lastMouseX;
+	double deltaY = app->input.mousePos.y - lastMouseY;
+	lastMouseX = app->input.mousePos.x;
+	lastMouseY = app->input.mousePos.y;
+
+
+	float xOffset = static_cast<float>(deltaX) * mouseSensitivity;
+	float yOffset = static_cast<float>(deltaY) * mouseSensitivity;
+	if (app->input.mouseButtons[MouseButton::RIGHT] == ButtonState::BUTTON_PRESSED)
 	{
-		
-	}
-	if (app->input.keys[Key::K_A] == ButtonState::BUTTON_PRESSED)
-	{
-		
-	}
-	if (app->input.keys[Key::K_S] == ButtonState::BUTTON_PRESSED)
-	{
-		
-	}
-	if (app->input.keys[Key::K_D] == ButtonState::BUTTON_PRESSED)
-	{
+		/*app->cam.yaw += xOffset;
+		app->cam.pitch += yOffset;
+		app->cam.pitch = glm::clamp(app->cam.pitch, -89.0f, 89.0f);;
+
+
+
+		//// Actualizar la dirección frontal de la cámara
+		vec3 front;
+		front.x = cos(glm::radians(app->cam.yaw)) * cos(glm::radians(app->cam.pitch));
+		front.y = sin(glm::radians(app->cam.pitch));
+		front.z = sin(glm::radians(app->cam.yaw)) * cos(glm::radians(app->cam.pitch));
+		app->cam.front = front;*/
+		float height = app->displaySize.y;
+		float width = app->displaySize.x;
+		float rotX = mouseSensitivity * (app->input.mousePos.y - (height / 2)) / height;
+		float rotY = mouseSensitivity * (app->input.mousePos.x - (width / 2)) / width;
+		//glm::rota
+		glm::mat4 a;
+		//glm::vec3 newOrientation = glm::rotate(app->cam.front, glm::radians(-rotX), normalize(cross(app->cam.front, app->cam.up)));
+
+		glm::vec3 vector(1.0f, 0.0f, 0.0f); // Vector en la dirección del eje x
+
 		
 	}
 
+		vec3 moveLeftRight = glm::normalize(cross(app->cam.front, app->cam.up)) * app->cam.speed;
 
+		if (app->input.keys[Key::K_W] == ButtonState::BUTTON_PRESSED)
+		{
+			app->cam.position += app->cam.front * app->cam.speed;
+			//app->cam.front = normalize(app->cam.target - app->cam.position);
+		}
+		if (app->input.keys[Key::K_A] == ButtonState::BUTTON_PRESSED)
+		{
+			app->cam.position -= moveLeftRight;
+			//app->cam.front = normalize(app->cam.target - app->cam.position);
+		}
+		if (app->input.keys[Key::K_S] == ButtonState::BUTTON_PRESSED)
+		{
+			app->cam.position -= app->cam.front * app->cam.speed;
+			//app->cam.front = normalize(app->cam.target - app->cam.position);
+		}
+		if (app->input.keys[Key::K_D] == ButtonState::BUTTON_PRESSED)
+		{
+			app->cam.position += moveLeftRight;
+			//app->cam.front = normalize(app->cam.target - app->cam.position);
+		}
+		if(!movingCam)
+			//app->cam.front = normalize(app->cam.target - app->cam.position);
+
+		// Actualizar dirección frontal (front)
+		
+
+		// Actualizar dirección hacia arriba (up)
+		// Aquí asumimos que la dirección hacia arriba es (0,1,0) en el espacio global
+		// Si quieres permitir que la cámara pueda rotar completamente, puedes calcular el up como el resultado del producto cruzado entre el vector de dirección frontal y el vector "derecha" (right).
+		//app->cam.right = normalize(cross(app->cam.front, app->cam.up));
+		//app->cam.up = normalize(cross(app->cam.right, app->cam.front));
+	
+
+	app->cam.target = app->cam.position + app->cam.front;
 }
 
 
@@ -426,16 +493,16 @@ void App::UpdateEntityBuffer()
 	//vec3 camPos = vec3(5.0, 5.0, 5.0);
 
 
-	vec3 zCam = glm::normalize(camPos - target);
+	vec3 zCam = glm::normalize(cam.position - target);
 	vec3 xCam = glm::cross(zCam, vec3(0, 1, 0));
 	vec3 yCam = glm::cross(xCam, zCam);
 
-	glm::mat4 view = glm::lookAt(camPos, target, yCam);
+	glm::mat4 view = glm::lookAt(cam.position, cam.target, cam.up);
 	BufferManager::MapBuffer(localUniformBuffer, GL_WRITE_ONLY);
 
 	//push lights globals paramas
 	globalPatamsOffset = localUniformBuffer.head;
-	PushVec3(localUniformBuffer, camPos);
+	PushVec3(localUniformBuffer, cam.position);
 	PushUInt(localUniformBuffer, lights.size());
 	for (u32 i = 0; i < lights.size(); ++i)
 	{
