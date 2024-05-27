@@ -244,7 +244,7 @@ void Init(App* app)
     u32 PatrickModelindex = ModelLoader::LoadModel(app, "Patrick/Patrick.obj");
     u32 SpongeModelindex = ModelLoader::LoadModel(app, "Patrick/SpongeBob.obj");
     u32 GroundModelindex = ModelLoader::LoadModel(app, "Patrick/ground.obj");
-    //u32 HouseModelindex = ModelLoader::LoadModel(app, "Assets/House.fbx");
+    u32 HouseModelindex = ModelLoader::LoadModel(app, "Assets/House.obj");
 
     u32 SphereModelindex = ModelLoader::LoadModel(app, "Patrick/Sphere.obj");
     u32 ConeModelindex = ModelLoader::LoadModel(app, "Patrick/Cone.obj");
@@ -264,7 +264,7 @@ void Init(App* app)
     app->entities.push_back({ TransformPositionScale(vec3(0.0,-2.0,3.0),vec3(1.0,1.0,1.0)), SpongeModelindex,0,0 });
 
     app->entities.push_back({ TransformPositionScale(vec3(0.0, -5.0, 0.0), vec3(1.0, 1.0, 1.0)), GroundModelindex,0,0 });
-    //app->entities.push_back({ TransformPositionScale(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)), HouseModelindex,0,0 });
+    app->entities.push_back({ TransformPositionScale(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)), HouseModelindex,0,0 });
 
 
     app->lights.push_back({ LightType::LightType_Directional,vec3(1.0,1.0,1.0),vec3(1.0,-1.0,1.0),vec3(0.0,5.0,0.0) });
@@ -330,8 +330,6 @@ void Gui(App* app)
 
 void Update(App* app)
 {
-    printf(std::to_string(app->cam.yaw).c_str());
-
     // You can handle app->input keyboard/mouse here
     bool movingCam = false;
     float sensivity = 1.4f;
@@ -500,9 +498,9 @@ void Render(App* app)
 void App::UpdateEntityBuffer()
 {
 
-    cam2.aspRatio = (float)displaySize.x / (float)displaySize.y;
-    cam2.fovYRad = glm::radians(60.0f);
-    glm::mat4 projection = glm::perspective(glm::radians(60.0f), cam2.aspRatio, cam2.zNear, cam2.zFar);
+    cam.aspRatio = (float)displaySize.x / (float)displaySize.y;
+    cam.fovYRad = glm::radians(60.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(60.0f), cam.aspRatio, cam.zNear, cam.zFar);
 
     //vec3 target = vec3(0.f, 0.f, 0.f);
     //vec3 camPos = vec3(5.0, 5.0, 5.0);

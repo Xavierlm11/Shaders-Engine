@@ -109,20 +109,15 @@ struct App
         float yaw;
         float pitch;
 
-    };
-    bool firstClick;
-
-    struct Camera2
-    {
         float fovYRad = 0.0;
         float aspRatio = 0.0;
         float zFar = 1000.0;
         float zNear = 0.1;
 
-        vec4 GetTopBottomLeftRight();
     };
-    Camera2 cam2;
-    Camera cam;//camera
+    bool firstClick;
+
+    Camera cam; // camera
 
     float iTime = 0;
 };
