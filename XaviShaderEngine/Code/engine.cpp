@@ -244,7 +244,7 @@ void Init(App* app)
     u32 PatrickModelindex = ModelLoader::LoadModel(app, "Patrick/Patrick.obj");
     u32 SpongeModelindex = ModelLoader::LoadModel(app, "Patrick/SpongeBob.obj");
     u32 GroundModelindex = ModelLoader::LoadModel(app, "Patrick/ground.obj");
-    u32 HouseModelindex = ModelLoader::LoadModel(app, "Assets/House.obj");
+    u32 HouseModelindex = ModelLoader::LoadModel(app, "Assets/hut.obj");
 
     u32 SphereModelindex = ModelLoader::LoadModel(app, "Patrick/Sphere.obj");
     u32 ConeModelindex = ModelLoader::LoadModel(app, "Patrick/Cone.obj");
