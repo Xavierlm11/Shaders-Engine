@@ -8,25 +8,25 @@ layout(location = 1) in vec2 aTexCoord;
 out vec2 vTexCoord;
 void main()
 {
-	vTexCoord = aTexCoord;
-	gl_Position = vec4(aPosition,1.0);
+    vTexCoord = aTexCoord;
+    gl_Position = vec4(aPosition,1.0);
 }
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
 
 struct Light
 {
-	uint type;
-	vec3 color;
-	vec3 direction;
-	vec3 position;
+    uint type;
+    vec3 color;
+    vec3 direction;
+        vec3 position;
 };
 
 layout(binding = 0, std140) uniform GlobalsParams
 {
-	vec3 uCamPosition;
-	uint uLightCount;
-	Light uLight[16];
+    vec3 uCamPosition;
+    uint uLightCount;
+    Light uLight[16];
 };
 
 in vec2 vTexCoord;
@@ -40,21 +40,21 @@ layout(location = 0) out vec4 oColor; // aqui se podria a�adir mas como onorma
 
 void CalculateBlitVars(in Light light, out vec3 ambient, out vec3 diffuse, out vec3 specular)
 {
-	vec3 vNormal = texture(uNormals, vTexCoord).xyz;
-	vec3 vViewDir = texture(uViewDir, vTexCoord).xyz;
-	vec3 lightDir = normalize(light.direction);
+    vec3 vNormal = texture(uNormals, vTexCoord).xyz;
+    vec3 vViewDir = texture(uViewDir, vTexCoord).xyz;
+    vec3 lightDir = normalize(light.direction);
 
-	float ambientStrenght = 0.2;
-	ambient = ambientStrenght * light.color;
+    float ambientStrenght = 0.2;
+    ambient = ambientStrenght * light.color;
 			
-	float diff = max(dot(vNormal,lightDir),0.0f);
-	diffuse = diff * light.color;
+    float diff = max(dot(vNormal,lightDir),0.0f);
+    diffuse = diff * light.color;
 
-	float specularStrenght = 0.1f;
-	vec3 reflectDir = reflect(-lightDir,vNormal);
-	vec3 normalViewDir = normalize(vViewDir);
-	float spec = pow(max(dot(normalViewDir, reflectDir),0.0f),32);
-	specular = specularStrenght * spec * light.color;
+    float specularStrenght = 0.1f;
+    vec3 reflectDir = reflect(-lightDir,vNormal);
+    vec3 normalViewDir = normalize(vViewDir);
+    float spec = pow(max(dot(normalViewDir, reflectDir),0.0f),32);
+    specular = specularStrenght * spec * light.color;
 
 }
 
@@ -63,45 +63,41 @@ void main()
 vec4 textureColor = texture(uAlbedo, vTexCoord);
 vec4 finalColor = vec4(0.0f);
 
-	for(int i=0; i< uLightCount; ++i)
-	{
-		Light light = uLight[i];
-		vec3 lightResult = vec3(0.0f);
+    for(int i=0; i< uLightCount; ++i)
+    {
+        Light light = uLight[i];
+        vec3 lightResult = vec3(0.0f);
 
-		vec3 ambient = vec3(0.0);
-		vec3 diffuse = vec3(0.0);
-		vec3 specular = vec3(0.0);
+        vec3 ambient = vec3(0.0);
+        vec3 diffuse = vec3(0.0);
+        vec3 specular = vec3(0.0);
+        if(uLight[i].type == 0) //directional light
+        {
+        CalculateBlitVars(light, ambient, diffuse, specular);
 
-		if(uLight[i].type == 0) //directional light
-		{
+        lightResult = ambient + diffuse + specular;
+        finalColor += vec4(lightResult, 1.0) * textureColor;
 			
-			
+        }
+        else //point light, Todo podria ser una funcio
+        {
+        //Light light = uLight[i];
 
-			CalculateBlitVars(light, ambient, diffuse, specular);
+        float constant = 1.0f;
+        float lineal = 0.09f;
+        float quadratic = 0.032f;
+        float distance = length(light.position - texture(uPosition, vTexCoord).xyz);
+        float attenuation = 1.0 / (constant + lineal * distance + quadratic * (distance * distance));
 
-			lightResult = ambient + diffuse + specular;
-			finalColor += vec4(lightResult, 1.0) * textureColor;
-			
-		}
-		else //point light, Todo podria ser una funcio
-		{
-			//Light light = uLight[i];
+        CalculateBlitVars(light, ambient, diffuse, specular);
 
-			float constant = 1.0f;
-			float lineal = 0.09f;
-			float quadratic = 0.032f;
-			float distance = length(light.position - texture(uPosition, vTexCoord).xyz);
-			float attenuation = 1.0 / (constant + lineal * distance + quadratic * (distance * distance));
+        lightResult = (ambient * attenuation) + (diffuse * attenuation) + (specular * attenuation);
+        finalColor += vec4(lightResult,1.0) * textureColor;
+        }
+    }
 
-			CalculateBlitVars(light, ambient, diffuse, specular);
-
-			lightResult = (ambient * attenuation) + (diffuse * attenuation) + (specular * attenuation);
-			finalColor += vec4(lightResult,1.0) * textureColor;
-		}
-	}
-
-	oColor = finalColor;
-	//oColor = texture(uPosition, vTexCoord);
+    oColor = finalColor;
+    //oColor = texture(uPosition, vTexCoord);
 }
 
 #endif
