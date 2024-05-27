@@ -24,108 +24,107 @@ const u16 indices[] =
 
 struct App
 {
-	void UpdateEntityBuffer();
+    void UpdateEntityBuffer();
 
-	void ConfigureFrameBuffer(FrameBuffer& aConfigFb);
+    void ConfigureFrameBuffer(FrameBuffer& aConfigFb);
 
-	void RenderGeometry(const Program& aBindedProgram);
+    void RenderGeometry(const Program& aBindedProgram);
 
-	const GLuint CreateTexture(const bool isFloatingPoint = false);
+    const GLuint CreateTexture(const bool isFloatingPoint = false);
 
-	// Loop
-	f32  deltaTime;
-	bool isRunning;
+    // Loop
+    f32  deltaTime;
+    bool isRunning;
 
-	// Input
-	Input input;
+    // Input
+    Input input;
+    ButtonState lastMouseRightClick = BUTTON_IDLE;
 
-	// Graphics
-	char gpuName[64];
-	char openGlVersion[64];
+    // Graphics
+    char gpuName[64];
+    char openGlVersion[64];
 
-	ivec2 displaySize;
+    ivec2 displaySize;
 
-	std::vector<Texture>    textures;
-	std::vector<Material>   materials;
-	std::vector<Mesh>       meshes;
-	std::vector<Model>      models;
-	std::vector<Program>    programs;
+    std::vector<Texture>    textures;
+    std::vector<Material>   materials;
+    std::vector<Mesh>       meshes;
+    std::vector<Model>      models;
+    std::vector<Program>    programs;
 
-	// program indices
-	GLuint renderToBackBuffer;
-	GLuint renderToFrameBuffer;
-	GLuint FrameBufferToQuadShader;
-	GLuint grindRenderShader;
-	u32 patricioModel = 0;
-	GLuint texturedMeshProgram_uTexture;
+    // program indices
+    GLuint renderToBackBuffer;
+    GLuint renderToFrameBuffer;
+    GLuint FrameBufferToQuadShader;
+    GLuint grindRenderShader;
+    u32 patricioModel = 0;
+    GLuint texturedMeshProgram_uTexture;
 
-	// texture indices
-	u32 diceTexIdx;
-	u32 whiteTexIdx;
-	u32 blackTexIdx;
-	u32 normalTexIdx;
-	u32 magentaTexIdx;
+    // texture indices
+    u32 diceTexIdx;
+    u32 whiteTexIdx;
+    u32 blackTexIdx;
+    u32 normalTexIdx;
+    u32 magentaTexIdx;
 
-	// Mode
-	Mode mode;
+    // Mode
+    Mode mode;
 
-	// Embedded geometry (in-editor simple meshes such as
-	// a screen filling quad, a cube, a sphere...)
-	GLuint embeddedVertices;
-	GLuint embeddedElements;
+    // Embedded geometry (in-editor simple meshes such as
+    // a screen filling quad, a cube, a sphere...)
+    GLuint embeddedVertices;
+    GLuint embeddedElements;
 
-	// Location of the texture uniform in the textured quad shader
-	GLuint programUniformTexture;
+    // Location of the texture uniform in the textured quad shader
+    GLuint programUniformTexture;
 
-	// VAO object to link our screen filling quad with our textured quad shader
-	GLuint vao;
+    // VAO object to link our screen filling quad with our textured quad shader
+    GLuint vao;
 
-	std::string openglDebugInfo;
-
-
-	GLint maxUniformBufferSize;
-	GLint uniformBlockAlignment;//alignemnt entre uniform block no entre las variables
-	Buffer localUniformBuffer;//donde estan todos las variables de los patricios
-	std::vector<Entity> entities; // iteracion rapida
-	std::vector<Entity> lightEntities; // iteracion rapida
-	std::vector<Light> lights; // iteracion rapida
-
-	GLuint globalPatamsOffset;
-	GLuint globalPatamsSize;
-
-	FrameBuffer defferedFrameBuffer;
+    std::string openglDebugInfo;
 
 
+    GLint maxUniformBufferSize;
+    GLint uniformBlockAlignment;//alignemnt entre uniform block no entre las variables
+    Buffer localUniformBuffer;//donde estan todos las variables de los patricios
+    std::vector<Entity> entities; // iteracion rapida
+    std::vector<Entity> lightEntities; // iteracion rapida
+    std::vector<Light> lights; // iteracion rapida
 
-	vec3 camPos = vec3(5.0, 5.0, 5.0);
+    GLuint globalPatamsOffset;
+    GLuint globalPatamsSize;
 
-	struct Camera {
-		vec3 position;
-		vec3 target;
-		vec3 up;
-		vec3 right;
-		vec3 front;
-		float speed;
-		float sensitivity;
-		float yaw;
-		float pitch;
-		
-	};
-	bool firstClick;
+    FrameBuffer defferedFrameBuffer;
 
-	struct Camera2
-	{
-		float fovYRad = 0.0;
-		float aspRatio = 0.0;
-		float zFar = 1000.0;
-		float zNear = 0.1;
+    vec3 camPos = vec3(5.0, 5.0, 5.0);
 
-		vec4 GetTopBottomLeftRight();
-	};
-	Camera2 cam2;
-	Camera cam;//camera
+    struct Camera {
+        vec3 position;
+        vec3 target;
+        vec3 up;
+        vec3 right;
+        vec3 front;
+        float speed;
+        float sensitivity;
+        float yaw;
+        float pitch;
 
-	float iTime=0;
+    };
+    bool firstClick;
+
+    struct Camera2
+    {
+        float fovYRad = 0.0;
+        float aspRatio = 0.0;
+        float zFar = 1000.0;
+        float zNear = 0.1;
+
+        vec4 GetTopBottomLeftRight();
+    };
+    Camera2 cam2;
+    Camera cam;//camera
+
+    float iTime = 0;
 };
 
 void Init(App* app);
