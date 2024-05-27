@@ -1,0 +1,22 @@
+# Blender 4.1.1 MTL File: 'Small_Bookshelf.blend'
+# www.blender.org
+
+newmtl books
+Ns 20.000006
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd bookshelfbooks_base.png
+
+newmtl bookshelf
+Ns 56.568546
+Ka 1.000000 1.000000 1.000000
+Ks 0.100000 0.100000 0.100000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+map_Kd bookshelfbooks_base_0.png

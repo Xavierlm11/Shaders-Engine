@@ -245,7 +245,8 @@ void Init(App* app)
     u32 SpongeModelindex = ModelLoader::LoadModel(app, "Patrick/SpongeBob.obj");
     u32 GroundModelindex = ModelLoader::LoadModel(app, "Patrick/ground.obj");
     //u32 HouseModelindex = ModelLoader::LoadModel(app, "Assets/hut.obj");
-    u32 BookShelfindex = ModelLoader::LoadModel(app, "Assets/light_oak_bookshelf.obj");
+   // u32 BookShelfindex = ModelLoader::LoadModel(app, "Assets/light_oak_bookshelf.obj");
+    u32 houseShelfindex = ModelLoader::LoadModel(app, "Assets/world.obj");
 
     u32 SphereModelindex = ModelLoader::LoadModel(app, "Patrick/Sphere.obj");
     u32 ConeModelindex = ModelLoader::LoadModel(app, "Patrick/Cone.obj");
@@ -266,7 +267,8 @@ void Init(App* app)
 
     app->entities.push_back({ TransformPositionScale(vec3(0.0, -5.0, 0.0), vec3(1.0, 1.0, 1.0)), GroundModelindex,0,0 });
     //app->entities.push_back({ TransformPositionScale(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)), HouseModelindex,0,0 });
-    app->entities.push_back({ TransformPositionScale(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)), BookShelfindex,0,0 });
+    //app->entities.push_back({ TransformPositionScale(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)), BookShelfindex,0,0 });
+    app->entities.push_back({ TransformPositionScale(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)), houseShelfindex,0,0 });
 
 
     app->lights.push_back({ LightType::LightType_Directional,vec3(1.0,1.0,1.0),vec3(1.0,-1.0,1.0),vec3(0.0,5.0,0.0) });
