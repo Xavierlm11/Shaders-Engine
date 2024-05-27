@@ -120,6 +120,10 @@ struct App
     Camera cam; // camera
 
     float iTime = 0;
+
+    // SSAO variables
+    float sampleRadius = 0.5f;
+    float ssaoBias = 0.02f;
 };
 
 void Init(App* app);
@@ -130,3 +134,6 @@ void Update(App* app);
 
 void Render(App* app);
 
+
+// SSAO
+std::vector<vec3> SamplePositionsInTangent();

@@ -8,23 +8,23 @@ layout(location = 2) in vec2 aTexCoord;
 
 struct Light
 {
-	uint type;
-	vec3 color;
-	vec3 direction;
-	vec3 position;
+    uint type;
+    vec3 color;
+    vec3 direction;
+    vec3 position;
 };
 
 layout(binding = 0, std140) uniform GlobalsParams
 {
-	vec3 uCamPosition;
-	uint uLightCount;
-	Light uLight[16];
+    vec3 uCamPosition;
+    uint uLightCount;
+    Light uLight[16];
 };
 
 layout(binding = 1,std140) uniform localParams
 {
-	mat4 uWorldMatrix;
-	mat4 uWorldViewProjectionMatrix;
+    mat4 uWorldMatrix;
+    mat4 uWorldViewProjectionMatrix;
 };
 
 out vec2 vTexCoord;
@@ -34,11 +34,11 @@ out vec3 vViewDir;
 
 void main()
 {
-	vTexCoord = aTexCoord;
-	vPosition = vec3(uWorldMatrix * vec4(aPosition, 1.0));
-	vNormal =  vec3(uWorldMatrix * vec4(aNormal, 0.0));
-	vViewDir = uCamPosition - vPosition;
-	gl_Position = uWorldViewProjectionMatrix * vec4(aPosition, 1.0);
+    vTexCoord = aTexCoord;
+    vPosition = vec3(uWorldMatrix * vec4(aPosition, 1.0));
+    vNormal =  vec3(uWorldMatrix * vec4(aNormal, 0.0));
+    vViewDir = uCamPosition - vPosition;
+    gl_Position = uWorldViewProjectionMatrix * vec4(aPosition, 1.0);
 	
 }
 
@@ -46,17 +46,17 @@ void main()
 
 struct Light
 {
-	uint type;
-	vec3 color;
-	vec3 direction;
-	vec3 position;
+    uint type;
+    vec3 color;
+    vec3 direction;
+    vec3 position;
 };
 
 layout(binding = 0, std140) uniform GlobalsParams
 {
-	vec3 uCamPosition;
-	uint uLightCount;
-	Light uLight[16];
+    vec3 uCamPosition;
+    uint uLightCount;
+    Light uLight[16];
 };
 
 in vec2 vTexCoord;
@@ -82,11 +82,11 @@ float LinearizeDepth(float depth)
 
 void main()
 {
-	oAlbedo = texture(uTexture, vTexCoord);
-	oNormals = vec4(vNormal, 1.0);
-	oPosition = vec4(vPosition, 1.0);
-	oViewDir = vec4(vViewDir,1.0);
-	oDepth = vec4(vec3(LinearizeDepth(gl_FragCoord.z) / far), 1.0f);
+    oAlbedo = texture(uTexture, vTexCoord);
+    oNormals = vec4(vNormal, 1.0);
+    oPosition = vec4(vPosition, 1.0);
+    oViewDir = vec4(vViewDir,1.0);
+    oDepth = vec4(vec3(LinearizeDepth(gl_FragCoord.z) / far), 1.0f);
 }
 
 #endif

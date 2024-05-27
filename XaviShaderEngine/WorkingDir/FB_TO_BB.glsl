@@ -19,7 +19,7 @@ struct Light
     uint type;
     vec3 color;
     vec3 direction;
-        vec3 position;
+    vec3 position;
 };
 
 layout(binding = 0, std140) uniform GlobalsParams
@@ -36,7 +36,13 @@ uniform sampler2D uNormals;
 uniform sampler2D uPosition;
 uniform sampler2D uViewDir;
 
-layout(location = 0) out vec4 oColor; // aqui se podria a�adir mas como onormals
+uniform vec3 ssaoSamples[64];
+uniform float sampleRadius;
+uniform mat4 projectionMatrix;
+uniform vec2 viewportSize;
+uniform float ssaoBias;
+
+layout(location = 0) out vec4 oColor; // aqui se podria añadir mas como onormals
 
 void CalculateBlitVars(in Light light, out vec3 ambient, out vec3 diffuse, out vec3 specular)
 {
@@ -58,12 +64,23 @@ void CalculateBlitVars(in Light light, out vec3 ambient, out vec3 diffuse, out v
 
 }
 
+vec3 reconstructPixelPosition(float d, vec2 v)
+{
+    mat4 projectionMatrixInv = inverse(projectionMatrix);
+    float xndc = gl_FragCoord.x / v.x * 2.0 - 1.0;
+    float yndc = gl_FragCoord.y / v.y * 2.0 - 1.0;
+    float zndc = d * 2.0 - 1.0;
+    vec4 posNDC = vec4(xndc, yndc, xndc, 1.0);
+    vec4 posView = projectionMatrixInv * posNDC;
+    return posView.xyz / posView.w;
+}
+
 void main()
 {
-vec4 textureColor = texture(uAlbedo, vTexCoord);
-vec4 finalColor = vec4(0.0f);
+    vec4 textureColor = texture(uAlbedo, vTexCoord);
+    vec4 finalColor = vec4(0.0f);
 
-    for(int i=0; i< uLightCount; ++i)
+    for(int i = 0; i < uLightCount; ++i)
     {
         Light light = uLight[i];
         vec3 lightResult = vec3(0.0f);
@@ -81,23 +98,45 @@ vec4 finalColor = vec4(0.0f);
         }
         else //point light, Todo podria ser una funcio
         {
-        //Light light = uLight[i];
+            //Light light = uLight[i];
 
-        float constant = 1.0f;
-        float lineal = 0.09f;
-        float quadratic = 0.032f;
-        float distance = length(light.position - texture(uPosition, vTexCoord).xyz);
-        float attenuation = 1.0 / (constant + lineal * distance + quadratic * (distance * distance));
+            float constant = 1.0f;
+            float lineal = 0.09f;
+            float quadratic = 0.032f;
+            float distance = length(light.position - texture(uPosition, vTexCoord).xyz);
+            float attenuation = 1.0 / (constant + lineal * distance + quadratic * (distance * distance));
 
-        CalculateBlitVars(light, ambient, diffuse, specular);
+            CalculateBlitVars(light, ambient, diffuse, specular);
 
-        lightResult = (ambient * attenuation) + (diffuse * attenuation) + (specular * attenuation);
-        finalColor += vec4(lightResult,1.0) * textureColor;
+            lightResult = (ambient * attenuation) + (diffuse * attenuation) + (specular * attenuation);
+            finalColor += vec4(lightResult, 1.0) * textureColor;
         }
     }
 
-    oColor = finalColor;
-    //oColor = texture(uPosition, vTexCoord);
+    float occlusion = 0.0;
+
+    vec3 vNormal = texture(uNormals, vTexCoord).xyz;
+    vec3 tangent = cross(vNormal, vec3(0, 1, 0));
+    vec3 bitangent = cross(vNormal, tangent);
+    mat3 TBN = mat3(tangent, bitangent, vNormal);
+
+    for (int i = 0; i < 64; i++)
+    {
+        vec3 offsetView = TBN * ssaoSamples[i];
+        vec3 samplePosView = texture(uPosition, vTexCoord).xyz + offsetView * sampleRadius;
+            
+        vec4 sampleTexCoord = projectionMatrix * vec4(samplePosView, 1.0);
+        sampleTexCoord.xyz /= sampleTexCoord.w;
+        sampleTexCoord.xyz = sampleTexCoord.xyz * 0.5 + 0.5;
+
+        float sampleDepth = texture(uPosition, sampleTexCoord.xy).z;
+        vec3 sampledPosView = reconstructPixelPosition(sampleDepth, viewportSize);
+
+        occlusion += (samplePosView.z < sampledPosView.z - ssaoBias ? 1.0 : 0.0);
+    }
+    
+    //oColor = finalColor;
+    oColor = vec4(1.0 - occlusion / 64.0);
 }
 
 #endif

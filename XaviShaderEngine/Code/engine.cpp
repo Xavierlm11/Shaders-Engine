@@ -11,6 +11,9 @@
 #include <stb_image_write.h>
 #include "Globals.h"
 #include <glm/glm.hpp>
+
+#include <random>
+
 GLuint CreateProgramFromSource(String programSource, const char* shaderName)
 {
     GLchar  infoLogBuffer[1024] = {};
@@ -305,6 +308,9 @@ void Gui(App* app)
     ImGui::Text("FPS: %f", 1.0f / app->deltaTime);
     ImGui::Text("%s", app->openglDebugInfo.c_str());
 
+    ImGui::SliderFloat("Sample Radius", &app->sampleRadius, 0.0f, 100.0f);
+    ImGui::SliderFloat("SSAO Bias", &app->ssaoBias, 0.0f, 100.0f);
+
     const char* renderModes[] = { "FORWARD","DEFERRED" };
     if (ImGui::BeginCombo("Render Mode", renderModes[app->mode]))
     {
@@ -484,6 +490,17 @@ void Render(App* app)
         glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[3]);
         glUniform1i(glGetUniformLocation(FBToBB.handle, "uViewDir"), 3);
 
+        vec3 firstSamplePoint = SamplePositionsInTangent()[0];
+        glUniform3fv(glGetUniformLocation(FBToBB.handle, "ssaoSamples"), 64, glm::value_ptr(firstSamplePoint));
+
+        glUniform1f(glGetUniformLocation(FBToBB.handle, "sampleRadius"), app->sampleRadius);
+
+        glm::mat4 projection = glm::perspective(glm::radians(60.0f), app->cam.aspRatio, app->cam.zNear, app->cam.zFar);
+        glUniformMatrix4fv(glGetUniformLocation(FBToBB.handle, "projectionMatrix"), 1, GL_FALSE, &projection[0][0]);
+
+        glUniform2f(glGetUniformLocation(FBToBB.handle, "viewportSize"), app->displaySize.x, app->displaySize.y);
+
+        glUniform1f(glGetUniformLocation(FBToBB.handle, "ssaoBias"), app->ssaoBias);
 
         glBindVertexArray(app->vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
@@ -501,7 +518,6 @@ void Render(App* app)
 
 void App::UpdateEntityBuffer()
 {
-
     cam.aspRatio = (float)displaySize.x / (float)displaySize.y;
     cam.fovYRad = glm::radians(60.0f);
     glm::mat4 projection = glm::perspective(glm::radians(60.0f), cam.aspRatio, cam.zNear, cam.zFar);
@@ -659,21 +675,31 @@ const GLuint App::CreateTexture(const bool isFloatingPoint)
     return textureHandle;
 }
 
-//vec4 App::Camera2::GetTopBottomLeftRight() //tudo
-//{
-//	vec4 returnValue;
-//
-//	//top
-//	returnValue.x = tan(fovYRad / 2) * zNear;
-//	//top
-//	returnValue.y =-returnValue.y;
-//	//top
-//	returnValue.z = returnValue.x * aspRatio;
-//	//top
-//	returnValue.w = tan(fovYRad / 2) * zNear;
-//
-//
-//	return vec4();
-//}
+float Lerp(float a, float b, float f)
+{
+    return a + f * (b - a);
+}
 
+std::vector<vec3> SamplePositionsInTangent()
+{
+    std::uniform_real_distribution<float> randomFloats(0.0, 1.0);
+    std::default_random_engine generator;
+    std::vector<glm::vec3> ssaoKernel;
+    for (unsigned int i = 0; i < 64; ++i)
+    {
+        glm::vec3 sample(
+            randomFloats(generator) * 2.0 - 1.0,
+            randomFloats(generator) * 2.0 - 1.0,
+            randomFloats(generator)
+        );
+        sample = glm::normalize(sample);
+        sample *= randomFloats(generator);
 
+        float scale = (float)i / 64.0;
+        scale = Lerp(0.1f, 1.0f, scale * scale);
+        sample *= scale;
+
+        ssaoKernel.push_back(sample);
+    }
+    return ssaoKernel;
+}
