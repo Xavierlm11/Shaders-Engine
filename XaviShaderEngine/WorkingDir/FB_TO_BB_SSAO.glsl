@@ -1,4 +1,4 @@
-#ifdef FB_TO_BB
+#ifdef FB_TO_BB_SSAO
 
 #if defined(VERTEX) ///////////////////////////////////////////////////
 
@@ -46,7 +46,7 @@ void CalculateBlitVars(in Light light, out vec3 ambient, out vec3 diffuse, out v
     vec3 lightDir = normalize(light.direction);
 
     float ambientStrenght = 0.2;
-    ambient = ambientStrenght * light.color;
+    ambient = ambientStrenght * light.color * texture(uAO, vTexCoord).z;
 			
     float diff = max(dot(vNormal,lightDir),0.0f);
     diffuse = diff * light.color;

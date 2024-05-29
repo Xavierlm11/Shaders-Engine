@@ -239,8 +239,10 @@ void Init(App* app)
     app->renderToBackBuffer = LoadProgram(app, "RENDER_TO_BB.glsl", "RENDER_TO_BB");
 
     app->renderToFrameBuffer = LoadProgram(app, "RENDER_TO_FB.glsl", "RENDER_TO_FB");
-    app->FrameBufferToQuadShader = LoadProgram(app, "FB_TO_BB.glsl", "FB_TO_BB");
+    app->frameBufferToQuadShader = LoadProgram(app, "FB_TO_BB.glsl", "FB_TO_BB");
     app->ssaoShader = LoadProgram(app, "SSAO.glsl", "SSAO");
+    app->ssaoBlurShader = LoadProgram(app, "Blur.glsl", "Blur");
+    app->frameBufferToQuadShaderSSAO = LoadProgram(app, "FB_TO_BB_SSAO.glsl", "FB_TO_BB_SSAO");
 
     const Program& texturedMeshProgram = app->programs[app->renderToBackBuffer];
     app->texturedMeshProgram_uTexture = glGetUniformLocation(texturedMeshProgram.handle, "uTexture");
@@ -288,7 +290,8 @@ void Init(App* app)
     }
 
     app->ConfigureFrameBuffer(app->defferedFrameBuffer);
-    app->ConfigureSssaoFrameBuffer(app->ssaoFrameBuffer);
+    app->ConfigureSsaoFrameBuffer(app->ssaoFrameBuffer);
+    app->ConfigureSsaoFrameBuffer(app->ssaoBlurFrameBuffer);
 
     app->cam.position = vec3(9.0f, 2.0f, 15.0f);
     app->cam.target = vec3(0.0f, 0.0f, -1.0f);
@@ -311,9 +314,10 @@ void Gui(App* app)
     ImGui::Text("FPS: %f", 1.0f / app->deltaTime);
     ImGui::Text("%s", app->openglDebugInfo.c_str());
 
+    ImGui::Checkbox("Use SSAO", &app->displaySSAO);
     ImGui::SliderFloat("Sample Radius", &app->sampleRadius, 0.0f, 100.0f);
     ImGui::SliderFloat("SSAO Bias", &app->ssaoBias, 0.0f, 100.0f);
-    ImGui::SliderFloat("Noise Scale", &app->noiseScale, 0.0f, 10.0f);
+    ImGui::Checkbox("Use RangeCheck", &app->rangeCheck);
 
     const char* renderModes[] = { "FORWARD","DEFERRED" };
     if (ImGui::BeginCombo("Render Mode", renderModes[app->mode]))
@@ -339,6 +343,8 @@ void Gui(App* app)
         }
         ImGui::Text("Ambient Occlusion");
         ImGui::Image((ImTextureID)app->ssaoFrameBuffer.colorAttachment[0], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::Text("Ambient Occlusion with Blur");
+        ImGui::Image((ImTextureID)app->ssaoBlurFrameBuffer.colorAttachment[0], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
     }
     ImGui::End();
 }
@@ -428,7 +434,7 @@ void Render(App* app)
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         //BufferManager::UnindBuffer(app->localUniformBuffer);
 
-        //RENDER TO bb FROM cOLORaTT
+        //RENDER SSAO
         glClearColor(0.f, 0.f, 0.f, .0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, app->displaySize.x, app->displaySize.y);
@@ -465,48 +471,104 @@ void Render(App* app)
         glBindTexture(GL_TEXTURE_2D, app->ssaoNoiseTexture);
         glUniform1i(glGetUniformLocation(SsaoProgram.handle, "noiseTexture"), 2);
 
-        glUniform1f(glGetUniformLocation(SsaoProgram.handle, "nScale"), app->noiseScale);
+        glUniform1f(glGetUniformLocation(SsaoProgram.handle, "useRangeCheck"), app->rangeCheck);
 
         glBindVertexArray(app->vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 
         glBindVertexArray(0);
-
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        //RENDER SSAO Blur
+        glClearColor(0.f, 0.f, 0.f, .0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, app->displaySize.x, app->displaySize.y);
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, app->ssaoBlurFrameBuffer.fbHandle);
+        glDrawBuffers(app->ssaoBlurFrameBuffer.colorAttachment.size(), app->ssaoBlurFrameBuffer.colorAttachment.data());
+        glClearColor(0.f, 0.f, 0.f, .0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        const Program& SsaoBlurProgram = app->programs[app->ssaoBlurShader];
+        glUseProgram(SsaoBlurProgram.handle);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, app->ssaoFrameBuffer.colorAttachment[0]);
+        glUniform1i(glGetUniformLocation(SsaoBlurProgram.handle, "ssaoTexture"), 0);
+
+        glBindVertexArray(app->vao);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+
+        glBindVertexArray(0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        
+        //RENDER TO bb FROM cOLORaTT
         glClearColor(0.f, 0.f, 0.f, .0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, app->displaySize.x, app->displaySize.y);
 
+        if (!app->displaySSAO)
+        {
+            const Program& FBToBB = app->programs[app->frameBufferToQuadShader];
+            glUseProgram(FBToBB.handle);
 
-        const Program& FBToBB = app->programs[app->FrameBufferToQuadShader];
-        glUseProgram(FBToBB.handle);
-        
-        glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), app->localUniformBuffer.handle, app->globalPatamsOffset, app->globalPatamsSize);
+            glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), app->localUniformBuffer.handle, app->globalPatamsOffset, app->globalPatamsSize);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[0]);
-        glUniform1i(glGetUniformLocation(FBToBB.handle, "uAlbedo"), 0);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[0]);
+            glUniform1i(glGetUniformLocation(FBToBB.handle, "uAlbedo"), 0);
 
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[1]);
-        glUniform1i(glGetUniformLocation(FBToBB.handle, "uNormals"), 1);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[1]);
+            glUniform1i(glGetUniformLocation(FBToBB.handle, "uNormals"), 1);
 
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[2]);
-        glUniform1i(glGetUniformLocation(FBToBB.handle, "uPosition"), 2);
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[2]);
+            glUniform1i(glGetUniformLocation(FBToBB.handle, "uPosition"), 2);
 
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[3]);
-        glUniform1i(glGetUniformLocation(FBToBB.handle, "uViewDir"), 3);
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[3]);
+            glUniform1i(glGetUniformLocation(FBToBB.handle, "uViewDir"), 3);
 
-        glBindVertexArray(app->vao);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+            glBindVertexArray(app->vao);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 
-        //glBindTexture(GL_TEXTURE_2D, 0);
-        glBindVertexArray(0);
+            glBindVertexArray(0);
+        }
+        else
+        {
+            const Program& FBToBBwithSSAO = app->programs[app->frameBufferToQuadShaderSSAO];
+            glUseProgram(FBToBBwithSSAO.handle);
+
+            glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), app->localUniformBuffer.handle, app->globalPatamsOffset, app->globalPatamsSize);
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[0]);
+            glUniform1i(glGetUniformLocation(FBToBBwithSSAO.handle, "uAlbedo"), 0);
+
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[1]);
+            glUniform1i(glGetUniformLocation(FBToBBwithSSAO.handle, "uNormals"), 1);
+
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[2]);
+            glUniform1i(glGetUniformLocation(FBToBBwithSSAO.handle, "uPosition"), 2);
+
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[3]);
+            glUniform1i(glGetUniformLocation(FBToBBwithSSAO.handle, "uViewDir"), 3);
+
+            glActiveTexture(GL_TEXTURE4);
+            glBindTexture(GL_TEXTURE_2D, app->ssaoFrameBuffer.colorAttachment[0]);
+            glUniform1i(glGetUniformLocation(FBToBBwithSSAO.handle, "uAO"), 4);
+
+            glBindVertexArray(app->vao);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+
+            glBindVertexArray(0);
+        }
         glUseProgram(0);
-        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
     }
     break;
     default:;
@@ -619,7 +681,7 @@ void App::ConfigureFrameBuffer(FrameBuffer& aConfigFb)
 
 }
 
-void App::ConfigureSssaoFrameBuffer(FrameBuffer& ssaoFB)
+void App::ConfigureSsaoFrameBuffer(FrameBuffer& ssaoFB)
 {
     ssaoFB.colorAttachment.push_back(CreateTexture());
 

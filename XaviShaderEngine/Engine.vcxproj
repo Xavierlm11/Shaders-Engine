@@ -53,7 +53,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="PRGrid.glsl" />
+    <None Include="WorkingDir\Blur.glsl" />
     <None Include="WorkingDir\FB_TO_BB.glsl" />
+    <None Include="WorkingDir\FB_TO_BB_SSAO.glsl" />
     <None Include="WorkingDir\RENDER_TO_BB.glsl" />
     <None Include="WorkingDir\RENDER_TO_FB.glsl" />
     <None Include="WorkingDir\shaders.glsl" />

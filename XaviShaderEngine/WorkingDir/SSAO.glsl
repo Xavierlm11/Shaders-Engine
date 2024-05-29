@@ -24,7 +24,7 @@ uniform mat4 projectionMatrix;
 uniform vec2 viewportSize;
 uniform float ssaoBias;
 uniform sampler2D noiseTexture;
-uniform float nScale;
+uniform bool useRangeCheck;
 
 layout(location = 0) out vec4 oColor;
 
@@ -44,7 +44,7 @@ void main()
     float occlusion = 0.0;
 
     vec2 noiseScale = viewportSize / textureSize(noiseTexture, 0);
-    vec3 randomVec = texture(noiseTexture, vTexCoord * noiseScale * nScale).xyz;
+    vec3 randomVec = texture(noiseTexture, vTexCoord * noiseScale).xyz;
 
     vec3 vNormal = texture(uNormals, vTexCoord).xyz;
     vec3 tangent = normalize(randomVec - vNormal * dot(randomVec, vNormal));
@@ -64,7 +64,10 @@ void main()
         float sampleDepth = texture(uPosition, sampleTexCoord.xy).z;
         vec3 sampledPosView = reconstructPixelPosition(sampleDepth, viewportSize);
 
-        occlusion += (samplePosView.z < sampledPosView.z - ssaoBias ? 1.0 : 0.0);
+        float rangeCheck = smoothstep(0.0, 1.0, sampleRadius / abs(samplePosView.z - sampledPosView.z));
+        rangeCheck *= rangeCheck;
+        if (!useRangeCheck) rangeCheck = 1.0;
+        occlusion += (samplePosView.z < sampledPosView.z - ssaoBias ? 1.0 : 0.0) * rangeCheck;
     }
     
     oColor = vec4(1.0 - occlusion / 64.0);

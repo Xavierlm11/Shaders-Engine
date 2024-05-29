@@ -32,7 +32,7 @@ struct App
 
     const GLuint CreateTexture(const bool isFloatingPoint = false);
 
-    void ConfigureSssaoFrameBuffer(FrameBuffer& ssaoFB);
+    void ConfigureSsaoFrameBuffer(FrameBuffer& ssaoFB);
 
     // Loop
     f32  deltaTime;
@@ -57,8 +57,10 @@ struct App
     // program indices
     GLuint renderToBackBuffer;
     GLuint renderToFrameBuffer;
-    GLuint FrameBufferToQuadShader;
+    GLuint frameBufferToQuadShader;
     GLuint ssaoShader;
+    GLuint ssaoBlurShader;
+    GLuint frameBufferToQuadShaderSSAO;
     u32 patricioModel = 0;
     GLuint texturedMeshProgram_uTexture;
 
@@ -98,6 +100,7 @@ struct App
 
     FrameBuffer defferedFrameBuffer;
     FrameBuffer ssaoFrameBuffer;
+    FrameBuffer ssaoBlurFrameBuffer;
 
     vec3 camPos = vec3(5.0, 5.0, 5.0);
 
@@ -127,10 +130,12 @@ struct App
     // SSAO variables
     float sampleRadius = 0.5f;
     float ssaoBias = 0.02f;
-    float noiseScale = 1;
+    bool rangeCheck = true;
 
     void KernelRotationVectors();
     GLuint ssaoNoiseTexture;
+
+    bool displaySSAO = true;
 };
 
 void Init(App* app);
