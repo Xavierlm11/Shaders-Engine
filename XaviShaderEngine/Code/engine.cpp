@@ -288,7 +288,7 @@ void Init(App* app)
     }
 
     app->ConfigureFrameBuffer(app->defferedFrameBuffer);
-    app->ConfigureFrameBuffer(app->ssaoFrameBuffer);
+    app->ConfigureSssaoFrameBuffer(app->ssaoFrameBuffer);
 
     app->cam.position = vec3(9.0f, 2.0f, 15.0f);
     app->cam.target = vec3(0.0f, 0.0f, -1.0f);
@@ -438,35 +438,39 @@ void Render(App* app)
         glClearColor(0.f, 0.f, 0.f, .0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glUseProgram(DeferredProgram.handle);
+        const Program& SsaoProgram = app->programs[app->ssaoShader];
+        glUseProgram(SsaoProgram.handle);
 
-        app->RenderGeometry(DeferredProgram);
-
-        /*glActiveTexture(GL_TEXTURE1);
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[1]);
-        glUniform1i(glGetUniformLocation(SSAO.handle, "uNormals"), 1);
+        glUniform1i(glGetUniformLocation(SsaoProgram.handle, "uNormals"), 0);
 
-        glActiveTexture(GL_TEXTURE2);
+        glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[2]);
-        glUniform1i(glGetUniformLocation(SSAO.handle, "uPosition"), 2);
+        glUniform1i(glGetUniformLocation(SsaoProgram.handle, "uPosition"), 1);
 
         vec3 firstSamplePoint = SamplePositionsInTangent()[0];
-        glUniform3fv(glGetUniformLocation(SSAO.handle, "ssaoSamples"), 64, glm::value_ptr(firstSamplePoint));
+        glUniform3fv(glGetUniformLocation(SsaoProgram.handle, "ssaoSamples"), 64, glm::value_ptr(firstSamplePoint));
 
-        glUniform1f(glGetUniformLocation(SSAO.handle, "sampleRadius"), app->sampleRadius);
+        glUniform1f(glGetUniformLocation(SsaoProgram.handle, "sampleRadius"), app->sampleRadius);
 
         glm::mat4 projection = glm::perspective(glm::radians(60.0f), app->cam.aspRatio, app->cam.zNear, app->cam.zFar);
-        glUniformMatrix4fv(glGetUniformLocation(SSAO.handle, "projectionMatrix"), 1, GL_FALSE, &projection[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(SsaoProgram.handle, "projectionMatrix"), 1, GL_FALSE, &projection[0][0]);
 
-        glUniform2f(glGetUniformLocation(SSAO.handle, "viewportSize"), app->displaySize.x, app->displaySize.y);
+        glUniform2f(glGetUniformLocation(SsaoProgram.handle, "viewportSize"), app->displaySize.x, app->displaySize.y);
 
-        glUniform1f(glGetUniformLocation(SSAO.handle, "ssaoBias"), app->ssaoBias);
+        glUniform1f(glGetUniformLocation(SsaoProgram.handle, "ssaoBias"), app->ssaoBias);
 
-        glActiveTexture(GL_TEXTURE4);
+        glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, app->ssaoNoiseTexture);
-        glUniform1i(glGetUniformLocation(SSAO.handle, "noiseTexture"), 4);
+        glUniform1i(glGetUniformLocation(SsaoProgram.handle, "noiseTexture"), 2);
 
-        glUniform1f(glGetUniformLocation(SSAO.handle, "nScale"), app->noiseScale);*/
+        glUniform1f(glGetUniformLocation(SsaoProgram.handle, "nScale"), app->noiseScale);
+
+        glBindVertexArray(app->vao);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+
+        glBindVertexArray(0);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClearColor(0.f, 0.f, 0.f, .0f);
@@ -618,10 +622,6 @@ void App::ConfigureFrameBuffer(FrameBuffer& aConfigFb)
 void App::ConfigureSssaoFrameBuffer(FrameBuffer& ssaoFB)
 {
     ssaoFB.colorAttachment.push_back(CreateTexture());
-    ssaoFB.colorAttachment.push_back(CreateTexture(true));
-    ssaoFB.colorAttachment.push_back(CreateTexture(true));
-    ssaoFB.colorAttachment.push_back(CreateTexture(true));
-    ssaoFB.colorAttachment.push_back(CreateTexture(true));
 
     glGenTextures(1, &ssaoFB.depthHandle);
     glBindTexture(GL_TEXTURE_2D, ssaoFB.depthHandle);
