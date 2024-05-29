@@ -124,5 +124,8 @@
     <None Include="PRGrid.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="WorkingDir\SSAO.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

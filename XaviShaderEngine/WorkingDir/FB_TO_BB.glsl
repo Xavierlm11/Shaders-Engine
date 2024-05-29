@@ -36,12 +36,6 @@ uniform sampler2D uNormals;
 uniform sampler2D uPosition;
 uniform sampler2D uViewDir;
 
-uniform vec3 ssaoSamples[64];
-uniform float sampleRadius;
-uniform mat4 projectionMatrix;
-uniform vec2 viewportSize;
-uniform float ssaoBias;
-
 layout(location = 0) out vec4 oColor; // aqui se podria añadir mas como onormals
 
 void CalculateBlitVars(in Light light, out vec3 ambient, out vec3 diffuse, out vec3 specular)
@@ -62,17 +56,6 @@ void CalculateBlitVars(in Light light, out vec3 ambient, out vec3 diffuse, out v
     float spec = pow(max(dot(normalViewDir, reflectDir),0.0f),32);
     specular = specularStrenght * spec * light.color;
 
-}
-
-vec3 reconstructPixelPosition(float d, vec2 v)
-{
-    mat4 projectionMatrixInv = inverse(projectionMatrix);
-    float xndc = gl_FragCoord.x / v.x * 2.0 - 1.0;
-    float yndc = gl_FragCoord.y / v.y * 2.0 - 1.0;
-    float zndc = d * 2.0 - 1.0;
-    vec4 posNDC = vec4(xndc, yndc, xndc, 1.0);
-    vec4 posView = projectionMatrixInv * posNDC;
-    return posView.xyz / posView.w;
 }
 
 void main()
@@ -112,31 +95,7 @@ void main()
             finalColor += vec4(lightResult, 1.0) * textureColor;
         }
     }
-
-    float occlusion = 0.0;
-
-    vec3 vNormal = texture(uNormals, vTexCoord).xyz;
-    vec3 tangent = cross(vNormal, vec3(0, 1, 0));
-    vec3 bitangent = cross(vNormal, tangent);
-    mat3 TBN = mat3(tangent, bitangent, vNormal);
-
-    for (int i = 0; i < 64; i++)
-    {
-        vec3 offsetView = TBN * ssaoSamples[i];
-        vec3 samplePosView = texture(uPosition, vTexCoord).xyz + offsetView * sampleRadius;
-            
-        vec4 sampleTexCoord = projectionMatrix * vec4(samplePosView, 1.0);
-        sampleTexCoord.xyz /= sampleTexCoord.w;
-        sampleTexCoord.xyz = sampleTexCoord.xyz * 0.5 + 0.5;
-
-        float sampleDepth = texture(uPosition, sampleTexCoord.xy).z;
-        vec3 sampledPosView = reconstructPixelPosition(sampleDepth, viewportSize);
-
-        occlusion += (samplePosView.z < sampledPosView.z - ssaoBias ? 1.0 : 0.0);
-    }
-    
-    //oColor = finalColor;
-    oColor = vec4(1.0 - occlusion / 64.0);
+    oColor = finalColor;
 }
 
 #endif

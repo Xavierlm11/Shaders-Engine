@@ -240,7 +240,7 @@ void Init(App* app)
 
     app->renderToFrameBuffer = LoadProgram(app, "RENDER_TO_FB.glsl", "RENDER_TO_FB");
     app->FrameBufferToQuadShader = LoadProgram(app, "FB_TO_BB.glsl", "FB_TO_BB");
-    //app->grindRenderShader = LoadProgram(app, "PRGrid.glsl", "GRID_SHADER");
+    app->ssaoShader = LoadProgram(app, "SSAO.glsl", "SSAO");
 
     const Program& texturedMeshProgram = app->programs[app->renderToBackBuffer];
     app->texturedMeshProgram_uTexture = glGetUniformLocation(texturedMeshProgram.handle, "uTexture");
@@ -288,6 +288,7 @@ void Init(App* app)
     }
 
     app->ConfigureFrameBuffer(app->defferedFrameBuffer);
+    app->ConfigureFrameBuffer(app->ssaoFrameBuffer);
 
     app->cam.position = vec3(9.0f, 2.0f, 15.0f);
     app->cam.target = vec3(0.0f, 0.0f, -1.0f);
@@ -300,6 +301,8 @@ void Init(App* app)
     app->firstClick = true;
 
     app->mode = Mode_Deferred;
+
+    app->KernelRotationVectors();
 }
 
 void Gui(App* app)
@@ -310,6 +313,7 @@ void Gui(App* app)
 
     ImGui::SliderFloat("Sample Radius", &app->sampleRadius, 0.0f, 100.0f);
     ImGui::SliderFloat("SSAO Bias", &app->ssaoBias, 0.0f, 100.0f);
+    ImGui::SliderFloat("Noise Scale", &app->noiseScale, 0.0f, 10.0f);
 
     const char* renderModes[] = { "FORWARD","DEFERRED" };
     if (ImGui::BeginCombo("Render Mode", renderModes[app->mode]))
@@ -333,7 +337,8 @@ void Gui(App* app)
             ImGui::Text(modes[i]);
             ImGui::Image((ImTextureID)app->defferedFrameBuffer.colorAttachment[i], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
         }
-
+        ImGui::Text("Ambient Occlusion");
+        ImGui::Image((ImTextureID)app->ssaoFrameBuffer.colorAttachment[0], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
     }
     ImGui::End();
 }
@@ -428,50 +433,50 @@ void Render(App* app)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, app->displaySize.x, app->displaySize.y);
 
-        //////RenderGrid
-        //GLuint drawBuffers[] = { GL_COLOR_ATTACHMENT4 };
-        //glDrawBuffers(1, drawBuffers);
+        glBindFramebuffer(GL_FRAMEBUFFER, app->ssaoFrameBuffer.fbHandle);
+        glDrawBuffers(app->ssaoFrameBuffer.colorAttachment.size(), app->ssaoFrameBuffer.colorAttachment.data());
+        glClearColor(0.f, 0.f, 0.f, .0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //glEnable(GL_DEPTH_TEST);
-        //glEnable(GL_BLEND);
-        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        //
-        //GLuint gridHandle = app->programs[app->grindRenderShader].handle;
-        //glUseProgram(gridHandle);
+        glUseProgram(DeferredProgram.handle);
 
-        //vec4 tblr = app->cam2.GetTopBottomLeftRight();
-        //glUniform1f(glGetUniformLocation(gridHandle, "left"),tblr.x );
-        //glUniform1f(glGetUniformLocation(gridHandle, "right"), tblr.y);
-        //glUniform1f(glGetUniformLocation(gridHandle, "bottom"), tblr.z);
-        //glUniform1f(glGetUniformLocation(gridHandle, "top"), tblr.w);
-        //glUniform1f(glGetUniformLocation(gridHandle, "znear"), app->cam2.zNear);
-        //
-        //glm::mat4 transMat = glm::translate(glm::mat4(1.0f), app->cam.position);
-        //glm::mat4 yawMat = glm::rotate(glm::mat4(1.0), glm::radians(app->cam.yaw), glm::vec3(0, 1, 0));
-        //glm::mat4 pitchMat = glm::rotate(glm::mat4(1.0), glm::radians(app->cam.pitch), glm::vec3(1, 0, 0));
-        //glm::mat4 rotationMat = yawMat * pitchMat;
-        //glm::mat4 
+        app->RenderGeometry(DeferredProgram);
 
-        //glUniformMatrix4fv(glGetUniformLocation(gridHandle, "worldMatrix"),1, );
-        ////glUniformMatrix4fv(glGetUniformLocation(gridHandle, "viewMatrix"),1, );
+        /*glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[1]);
+        glUniform1i(glGetUniformLocation(SSAO.handle, "uNormals"), 1);
 
-        //glBindVertexArray(app->vao);
-        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[2]);
+        glUniform1i(glGetUniformLocation(SSAO.handle, "uPosition"), 2);
 
-        //glBindVertexArray(0);
-        //glUseProgram(0);
+        vec3 firstSamplePoint = SamplePositionsInTangent()[0];
+        glUniform3fv(glGetUniformLocation(SSAO.handle, "ssaoSamples"), 64, glm::value_ptr(firstSamplePoint));
 
-        //////
-        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        //glDisable(GL_BLEND);
+        glUniform1f(glGetUniformLocation(SSAO.handle, "sampleRadius"), app->sampleRadius);
+
+        glm::mat4 projection = glm::perspective(glm::radians(60.0f), app->cam.aspRatio, app->cam.zNear, app->cam.zFar);
+        glUniformMatrix4fv(glGetUniformLocation(SSAO.handle, "projectionMatrix"), 1, GL_FALSE, &projection[0][0]);
+
+        glUniform2f(glGetUniformLocation(SSAO.handle, "viewportSize"), app->displaySize.x, app->displaySize.y);
+
+        glUniform1f(glGetUniformLocation(SSAO.handle, "ssaoBias"), app->ssaoBias);
+
+        glActiveTexture(GL_TEXTURE4);
+        glBindTexture(GL_TEXTURE_2D, app->ssaoNoiseTexture);
+        glUniform1i(glGetUniformLocation(SSAO.handle, "noiseTexture"), 4);
+
+        glUniform1f(glGetUniformLocation(SSAO.handle, "nScale"), app->noiseScale);*/
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClearColor(0.f, 0.f, 0.f, .0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, app->displaySize.x, app->displaySize.y);
 
 
         const Program& FBToBB = app->programs[app->FrameBufferToQuadShader];
         glUseProgram(FBToBB.handle);
-
-
-
-        /////
+        
         glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), app->localUniformBuffer.handle, app->globalPatamsOffset, app->globalPatamsSize);
 
         glActiveTexture(GL_TEXTURE0);
@@ -489,18 +494,6 @@ void Render(App* app)
         glActiveTexture(GL_TEXTURE3);
         glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[3]);
         glUniform1i(glGetUniformLocation(FBToBB.handle, "uViewDir"), 3);
-
-        vec3 firstSamplePoint = SamplePositionsInTangent()[0];
-        glUniform3fv(glGetUniformLocation(FBToBB.handle, "ssaoSamples"), 64, glm::value_ptr(firstSamplePoint));
-
-        glUniform1f(glGetUniformLocation(FBToBB.handle, "sampleRadius"), app->sampleRadius);
-
-        glm::mat4 projection = glm::perspective(glm::radians(60.0f), app->cam.aspRatio, app->cam.zNear, app->cam.zFar);
-        glUniformMatrix4fv(glGetUniformLocation(FBToBB.handle, "projectionMatrix"), 1, GL_FALSE, &projection[0][0]);
-
-        glUniform2f(glGetUniformLocation(FBToBB.handle, "viewportSize"), app->displaySize.x, app->displaySize.y);
-
-        glUniform1f(glGetUniformLocation(FBToBB.handle, "ssaoBias"), app->ssaoBias);
 
         glBindVertexArray(app->vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
@@ -622,6 +615,49 @@ void App::ConfigureFrameBuffer(FrameBuffer& aConfigFb)
 
 }
 
+void App::ConfigureSssaoFrameBuffer(FrameBuffer& ssaoFB)
+{
+    ssaoFB.colorAttachment.push_back(CreateTexture());
+    ssaoFB.colorAttachment.push_back(CreateTexture(true));
+    ssaoFB.colorAttachment.push_back(CreateTexture(true));
+    ssaoFB.colorAttachment.push_back(CreateTexture(true));
+    ssaoFB.colorAttachment.push_back(CreateTexture(true));
+
+    glGenTextures(1, &ssaoFB.depthHandle);
+    glBindTexture(GL_TEXTURE_2D, ssaoFB.depthHandle);
+    //EL BUFFEER OCUPA MAS,, si hay o¡problema scon el z fight aumentar la cantidad de bits
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, displaySize.x, displaySize.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);  //RGBA para .si hacemos un resice que vuelva a generar el frame buff
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glGenFramebuffers(1, &ssaoFB.fbHandle);
+    glBindFramebuffer(GL_FRAMEBUFFER, ssaoFB.fbHandle);
+
+    std::vector<GLuint> drawBuffers;
+    for (size_t i = 0; i < ssaoFB.colorAttachment.size(); ++i)
+    {
+        GLuint position = GL_COLOR_ATTACHMENT0 + i;
+        glFramebufferTexture(GL_FRAMEBUFFER, position, ssaoFB.colorAttachment[i], 0);
+        drawBuffers.push_back(position);
+    }
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ssaoFB.depthHandle, 0);
+
+    glDrawBuffers(drawBuffers.size(), drawBuffers.data());
+
+    GLenum framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (framebufferStatus != GL_FRAMEBUFFER_COMPLETE)
+    {
+        int i = 0;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 void App::RenderGeometry(const Program& aBindedProgram)
 {
     glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), localUniformBuffer.handle, globalPatamsOffset, globalPatamsSize);
@@ -702,4 +738,27 @@ std::vector<vec3> SamplePositionsInTangent()
         ssaoKernel.push_back(sample);
     }
     return ssaoKernel;
+}
+
+void App::KernelRotationVectors()
+{
+    std::uniform_real_distribution<float> randomFloats(0.0, 1.0);
+    std::default_random_engine generator;
+    std::vector<glm::vec3> ssaoNoise;
+    for (unsigned int i = 0; i < 16; i++)
+    {
+        glm::vec3 noise(
+            randomFloats(generator) * 2.0 - 1.0,
+            randomFloats(generator) * 2.0 - 1.0,
+            0.0f);
+        ssaoNoise.push_back(noise);
+    }
+
+    glGenTextures(1, &ssaoNoiseTexture);
+    glBindTexture(GL_TEXTURE_2D, ssaoNoiseTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 4, 4, 0, GL_RGB, GL_FLOAT, &ssaoNoise[0]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
