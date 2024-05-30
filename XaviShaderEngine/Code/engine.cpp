@@ -852,7 +852,7 @@ void App::WaterPass(Camera* camera, GLenum ca, bool isReflectionPart)
     const Program& program = programs[clippingPlaneShader];
     glUseProgram(program.handle);
 
-    glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), localUniformBuffer.handle, globalPatamsOffset, globalPatamsSize);
+    glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(1), localUniformBuffer.handle, globalPatamsOffset, globalPatamsSize);
 
     vec3 xCam = glm::cross(camera->front, vec3(0, 1, 0));
     vec3 yCam = glm::cross(xCam, camera->front);

@@ -5,14 +5,21 @@
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec2 aTexCoord;
 
+layout(binding=1,std140) uniform localParams
+{
+    mat4 uWorldMatrix;
+    mat4 uWorldViewProjectionMatrix;
+};
+
 uniform vec4 clippingPlane;
+uniform mat4 projectionMatrix;
 
 out vec2 vTexCoord;
 void main()
 {
     vTexCoord = aTexCoord;
     gl_Position = vec4(aPosition,1.0);
-    gl_ClipDistance[0] = dot(vec4(aPosition,1.0), clippingPlane);
+    gl_ClipDistance[0] = dot(uWorldViewProjectionMatrix * vec4(aPosition, 1.0), clippingPlane);
 }
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
