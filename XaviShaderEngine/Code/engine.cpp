@@ -246,12 +246,13 @@ void Init(App* app)
 
     const Program& texturedMeshProgram = app->programs[app->renderToBackBuffer];
     app->texturedMeshProgram_uTexture = glGetUniformLocation(texturedMeshProgram.handle, "uTexture");
-    u32 PatrickModelindex = ModelLoader::LoadModel(app, "Patrick/Patrick.obj");
-    u32 SpongeModelindex = ModelLoader::LoadModel(app, "Patrick/SpongeBob.obj");
-    u32 GroundModelindex = ModelLoader::LoadModel(app, "Patrick/ground.obj");
+    //u32 PatrickModelindex = ModelLoader::LoadModel(app, "Patrick/Patrick.obj");
+    //u32 SpongeModelindex = ModelLoader::LoadModel(app, "Patrick/SpongeBob.obj");
+    //u32 GroundModelindex = ModelLoader::LoadModel(app, "Patrick/ground.obj");
     //u32 HouseModelindex = ModelLoader::LoadModel(app, "Assets/hut.obj");
-   // u32 BookShelfindex = ModelLoader::LoadModel(app, "Assets/light_oak_bookshelf.obj");
+    //u32 BookShelfindex = ModelLoader::LoadModel(app, "Assets/light_oak_bookshelf.obj");
     u32 houseShelfindex = ModelLoader::LoadModel(app, "Assets/world.obj");
+    u32 lakeindex = ModelLoader::LoadModel(app, "Assets/Lake.obj");
 
     u32 SphereModelindex = ModelLoader::LoadModel(app, "Patrick/Sphere.obj");
     u32 ConeModelindex = ModelLoader::LoadModel(app, "Patrick/Cone.obj");
@@ -264,19 +265,20 @@ void Init(App* app)
 
     app->localUniformBuffer = CreateConstantBuffer(app->maxUniformBufferSize); // crea un uniform buffer
 
-    app->entities.push_back({ TransformPositionScale(vec3(5.0,0.0,-3.0),vec3(1.0,1.0,1.0)), PatrickModelindex,0,0 });
-    app->entities.push_back({ TransformPositionScale(vec3(-5.0,0.0,-3.0),vec3(1.0,1.0,1.0)), PatrickModelindex,0,0 });
+    //app->entities.push_back({ TransformPositionScale(vec3(5.0,0.0,-3.0),vec3(1.0,1.0,1.0)), PatrickModelindex,0,0 });
+    //app->entities.push_back({ TransformPositionScale(vec3(-5.0,0.0,-3.0),vec3(1.0,1.0,1.0)), PatrickModelindex,0,0 });
     //app->entities.push_back({ TransformPositionScale(vec3(5.0,-2.0,-2.0),vec3(1.0,1.0,1.0)), PatrickModelindex,0,0 });
     //app->entities.push_back({ TransformPositionScale(vec3(5.0,-2.0,-2.0),vec3(1.0,1.0,1.0)), SpongeModelindex,0,0 });
-    app->entities.push_back({ TransformPositionScale(vec3(0.0,-2.0,3.0),vec3(1.0,1.0,1.0)), SpongeModelindex,0,0 });
+    //app->entities.push_back({ TransformPositionScale(vec3(0.0,-2.0,3.0),vec3(1.0,1.0,1.0)), SpongeModelindex,0,0 });
 
-    app->entities.push_back({ TransformPositionScale(vec3(0.0, -5.0, 0.0), vec3(1.0, 1.0, 1.0)), GroundModelindex,0,0 });
+    //app->entities.push_back({ TransformPositionScale(vec3(0.0, -5.0, 0.0), vec3(1.0, 1.0, 1.0)), GroundModelindex,0,0 });
     //app->entities.push_back({ TransformPositionScale(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)), HouseModelindex,0,0 });
     //app->entities.push_back({ TransformPositionScale(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)), BookShelfindex,0,0 });
-    app->entities.push_back({ TransformPositionScale(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)), houseShelfindex,0,0 });
+    app->entities.push_back({ TransformPositionScale(vec3(0.0, 2.0, 0.0), vec3(1.0, 1.0, 1.0)), houseShelfindex,0,0 });
+    app->entities.push_back({ TransformPositionScale(vec3(-45.0, 0.0, 65.0), vec3(1.0, 1.0, 1.0)), lakeindex,0,0 });
 
 
-    app->lights.push_back({ LightType::LightType_Directional,vec3(1.0,1.0,1.0),vec3(1.0,-1.0,1.0),vec3(0.0,5.0,0.0) });
+    app->lights.push_back({ LightType::LightType_Directional,vec3(1.0,1.0,1.0),vec3(1.0,1.0,1.0),vec3(0.0,5.0,0.0) });
     app->lights.push_back({ LightType::LightType_Point,vec3(0.0,0.0,3.0),vec3(1.0,1.0,1.0),vec3(10.0,2.0,1.0) });
     app->lights.push_back({ LightType::LightType_Point,vec3(3.0,0.0,0.0),vec3(1.0,1.0,1.0),vec3(-10.0,2.0,1.0) });
 
@@ -296,7 +298,7 @@ void Init(App* app)
     app->cam.position = vec3(9.0f, 2.0f, 15.0f);
     app->cam.target = vec3(0.0f, 0.0f, -1.0f);
     app->cam.up = vec3(0.0f, 1.0f, 0.0f);
-    app->cam.speed = 0.1f;
+    app->cam.speed = 1.0f;
     app->cam.sensitivity = 0.05f;
     app->cam.front = vec3(0.0f, 0.0f, -1.0f);
     app->cam.pitch = 0;
