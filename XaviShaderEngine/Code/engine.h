@@ -32,7 +32,7 @@ struct App
 
     const GLuint CreateTexture(const bool isFloatingPoint = false);
 
-    void ConfigureSsaoFrameBuffer(FrameBuffer& ssaoFB);
+    void ConfigureSingleFrameBuffer(FrameBuffer& ssaoFB);
 
     // Loop
     f32  deltaTime;
@@ -61,6 +61,8 @@ struct App
     GLuint ssaoShader;
     GLuint ssaoBlurShader;
     GLuint frameBufferToQuadShaderSSAO;
+    GLuint clippingPlaneShader;
+    GLuint waterShader;
     u32 patricioModel = 0;
     GLuint texturedMeshProgram_uTexture;
 
@@ -136,6 +138,12 @@ struct App
     GLuint ssaoNoiseTexture;
 
     bool displaySSAO = true;
+
+    // Water
+    FrameBuffer waterReflectionFrameBuffer;
+    FrameBuffer waterRefractionFrameBuffer;
+
+    void WaterPass(Camera* camera, GLenum ca, bool isReflectionPart);
 };
 
 void Init(App* app);

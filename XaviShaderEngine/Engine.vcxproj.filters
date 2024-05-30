@@ -133,5 +133,11 @@
     <None Include="WorkingDir\FB_TO_BB_SSAO.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="WorkingDir\WaterEffect.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="WorkingDir\ClippingPlaneShader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
