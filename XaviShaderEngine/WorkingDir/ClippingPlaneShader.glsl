@@ -12,6 +12,7 @@ layout(binding=1,std140) uniform localParams
 };
 
 uniform vec4 clippingPlane;
+uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 
 out vec2 vTexCoord;
@@ -65,7 +66,6 @@ void CalculateBlitVars(in Light light, out vec3 ambient, out vec3 diffuse, out v
     vec3 normalViewDir = normalize(vViewDir);
     float spec = pow(max(dot(normalViewDir, reflectDir),0.0f),32);
     specular = specularStrenght * spec * light.color;
-
 }
 
 void main()

@@ -24,11 +24,32 @@ const u16 indices[] =
 
 struct App
 {
-    void UpdateEntityBuffer();
+    vec3 camPos = vec3(5.0, 5.0, 5.0);
+
+    struct Camera {
+        vec3 position;
+        vec3 target;
+        vec3 up;
+        vec3 right;
+        vec3 front;
+        float speed;
+        float sensitivity;
+        float yaw;
+        float pitch;
+
+        float fovYRad = 0.0;
+        float aspRatio = 0.0;
+        float zFar = 1000.0;
+        float zNear = 0.1;
+
+    };
+    bool firstClick;
+
+    void UpdateEntityBuffer(Camera* camera);
 
     void ConfigureFrameBuffer(FrameBuffer& aConfigFb);
 
-    void RenderGeometry(const Program& aBindedProgram);
+    void RenderGeometry(const Program& aBindedProgram, vec4 clippingPlane);
 
     const GLuint CreateTexture(const bool isFloatingPoint = false);
 
@@ -61,7 +82,6 @@ struct App
     GLuint ssaoShader;
     GLuint ssaoBlurShader;
     GLuint frameBufferToQuadShaderSSAO;
-    GLuint clippingPlaneShader;
     GLuint waterShader;
     u32 patricioModel = 0;
     GLuint texturedMeshProgram_uTexture;
@@ -104,28 +124,8 @@ struct App
     FrameBuffer ssaoFrameBuffer;
     FrameBuffer ssaoBlurFrameBuffer;
 
-    vec3 camPos = vec3(5.0, 5.0, 5.0);
-
-    struct Camera {
-        vec3 position;
-        vec3 target;
-        vec3 up;
-        vec3 right;
-        vec3 front;
-        float speed;
-        float sensitivity;
-        float yaw;
-        float pitch;
-
-        float fovYRad = 0.0;
-        float aspRatio = 0.0;
-        float zFar = 1000.0;
-        float zNear = 0.1;
-
-    };
-    bool firstClick;
-
     Camera cam; // camera
+    Camera camInv;
 
     float iTime = 0;
 
@@ -142,8 +142,12 @@ struct App
     // Water
     FrameBuffer waterReflectionFrameBuffer;
     FrameBuffer waterRefractionFrameBuffer;
+    FrameBuffer waterReflectionDefferedFrameBuffer;
+    FrameBuffer waterRefractionDefferedFrameBuffer;
 
     void WaterPass(Camera* camera, GLenum ca, bool isReflectionPart);
+
+    u32 renderBuffers = 0;
 };
 
 void Init(App* app);

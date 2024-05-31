@@ -6,6 +6,8 @@ layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec2 aTexCoord;
 
+uniform vec4 clippingPlane;
+
 struct Light
 {
     uint type;
@@ -38,6 +40,7 @@ void main()
     vPosition = vec3(uWorldMatrix * vec4(aPosition, 1.0));
     vNormal =  vec3(uWorldMatrix * vec4(aNormal, 0.0));
     vViewDir = uCamPosition - vPosition;
+    gl_ClipDistance[0] = dot(uWorldMatrix * vec4(aPosition, 1.0), clippingPlane);
     gl_Position = uWorldViewProjectionMatrix * vec4(aPosition, 1.0);
 	
 }

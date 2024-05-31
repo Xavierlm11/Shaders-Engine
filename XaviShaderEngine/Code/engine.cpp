@@ -233,8 +233,8 @@ void Init(App* app)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     // Water Textures
-    app->ConfigureSingleFrameBuffer(app->waterReflectionFrameBuffer);
-    app->ConfigureSingleFrameBuffer(app->waterRefractionFrameBuffer);
+    app->ConfigureSingleFrameBuffer(app->waterReflectionDefferedFrameBuffer);
+    app->ConfigureSingleFrameBuffer(app->waterRefractionDefferedFrameBuffer);
 
     app->renderToBackBuffer = LoadProgram(app, "RENDER_TO_BB.glsl", "RENDER_TO_BB");
     app->renderToFrameBuffer = LoadProgram(app, "RENDER_TO_FB.glsl", "RENDER_TO_FB");
@@ -242,7 +242,6 @@ void Init(App* app)
     app->ssaoShader = LoadProgram(app, "SSAO.glsl", "SSAO");
     app->ssaoBlurShader = LoadProgram(app, "Blur.glsl", "Blur");
     app->frameBufferToQuadShaderSSAO = LoadProgram(app, "FB_TO_BB_SSAO.glsl", "FB_TO_BB_SSAO");
-    app->clippingPlaneShader = LoadProgram(app, "ClippingPlaneShader.glsl", "ClippingPlaneShader");
     //app->waterShader = LoadProgram(app, "WaterEffect.glsl", "WaterEffect");
 
     const Program& texturedMeshProgram = app->programs[app->renderToBackBuffer];
@@ -293,6 +292,8 @@ void Init(App* app)
     }
 
     app->ConfigureFrameBuffer(app->defferedFrameBuffer);
+    app->ConfigureFrameBuffer(app->waterRefractionFrameBuffer);
+    app->ConfigureFrameBuffer(app->waterReflectionFrameBuffer);
     app->ConfigureSingleFrameBuffer(app->ssaoFrameBuffer);
     app->ConfigureSingleFrameBuffer(app->ssaoBlurFrameBuffer);
 
@@ -317,11 +318,6 @@ void Gui(App* app)
     ImGui::Text("FPS: %f", 1.0f / app->deltaTime);
     ImGui::Text("%s", app->openglDebugInfo.c_str());
 
-    ImGui::Checkbox("Use SSAO", &app->displaySSAO);
-    ImGui::SliderFloat("Sample Radius", &app->sampleRadius, 0.0f, 100.0f);
-    ImGui::SliderFloat("SSAO Bias", &app->ssaoBias, 0.0f, 100.0f);
-    ImGui::Checkbox("Use RangeCheck", &app->rangeCheck);
-
     const char* renderModes[] = { "FORWARD","DEFERRED" };
     if (ImGui::BeginCombo("Render Mode", renderModes[app->mode]))
     {
@@ -338,21 +334,57 @@ void Gui(App* app)
     }
     if (app->mode == Mode::Mode_Deferred)
     {
-        const char* modes[] = { "Albedo", "Normals", "Position", "ViewDir", "Depth" };
-        for (size_t i = 0; i < app->defferedFrameBuffer.colorAttachment.size(); i++)
+        const char* renderBuffers[] = { "MAIN","REFRACTION","REFLECTION"};
+        if (ImGui::BeginCombo("Render Buffer", renderBuffers[app->renderBuffers]))
         {
-            ImGui::Text(modes[i]);
-            ImGui::Image((ImTextureID)app->defferedFrameBuffer.colorAttachment[i], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
+            for (size_t i = 0; i < ARRAY_COUNT(renderBuffers); ++i)
+            {
+                bool isSelected = (i == app->renderBuffers);
+                if (ImGui::Selectable(renderBuffers[i], isSelected)) //recordar esto no va bien
+                {
+                    app->renderBuffers = static_cast<Mode>(i);
+                }
+            }
+
+            ImGui::EndCombo();
         }
-        ImGui::Text("Ambient Occlusion");
-        ImGui::Image((ImTextureID)app->ssaoFrameBuffer.colorAttachment[0], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
-        ImGui::Text("Ambient Occlusion with Blur");
-        ImGui::Image((ImTextureID)app->ssaoBlurFrameBuffer.colorAttachment[0], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
-        ImGui::Text("Water Reflection");
-        ImGui::Image((ImTextureID)app->waterReflectionFrameBuffer.colorAttachment[0], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
-        ImGui::Text("Water Refraction");
-        ImGui::Image((ImTextureID)app->waterRefractionFrameBuffer.colorAttachment[0], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
+        if (app->renderBuffers == 0)
+        {
+            const char* modes[] = { "Albedo", "Normals", "Position", "ViewDir", "Depth" };
+            for (size_t i = 0; i < app->defferedFrameBuffer.colorAttachment.size(); i++)
+            {
+                ImGui::Text(modes[i]);
+                ImGui::Image((ImTextureID)app->defferedFrameBuffer.colorAttachment[i], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
+            }
+            ImGui::Text("Ambient Occlusion");
+            ImGui::Image((ImTextureID)app->ssaoFrameBuffer.colorAttachment[0], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Text("Ambient Occlusion with Blur");
+            ImGui::Image((ImTextureID)app->ssaoBlurFrameBuffer.colorAttachment[0], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
+        }
+        else if (app->renderBuffers == 1)
+        {
+            const char* modes[] = { "Albedo", "Normals", "Position", "ViewDir", "Depth" };
+            for (size_t i = 0; i < app->waterRefractionFrameBuffer.colorAttachment.size(); i++)
+            {
+                ImGui::Text(modes[i]);
+                ImGui::Image((ImTextureID)app->waterRefractionFrameBuffer.colorAttachment[i], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
+            }
+            ImGui::Text("Deffered Refraction");
+            ImGui::Image((ImTextureID)app->waterRefractionDefferedFrameBuffer.colorAttachment[0], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
+        }
+        else
+        {
+            const char* modes[] = { "Albedo", "Normals", "Position", "ViewDir", "Depth" };
+            for (size_t i = 0; i < app->waterReflectionFrameBuffer.colorAttachment.size(); i++)
+            {
+                ImGui::Text(modes[i]);
+                ImGui::Image((ImTextureID)app->waterReflectionFrameBuffer.colorAttachment[i], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
+            }
+            ImGui::Text("Deffered Reflection");
+            ImGui::Image((ImTextureID)app->waterReflectionDefferedFrameBuffer.colorAttachment[0], ImVec2(300, 150), ImVec2(0, 1), ImVec2(1, 0));
+        }
     }
+    
     ImGui::End();
 }
 
@@ -390,8 +422,22 @@ void Update(App* app)
     // Actualizar dirección frontal (front)
     app->cam.right = normalize(cross(glm::vec3(0.0f, 1.0f, 0.0f), app->cam.front));
     app->cam.up = normalize(cross(app->cam.front, app->cam.right));
-
     app->cam.target = app->cam.position + app->cam.front;
+
+    app->camInv = app->cam;
+    app->camInv.position.y *= -1;
+    app->camInv.pitch *= -1;
+    if (app->camInv.pitch > 89.0f) app->camInv.pitch = 89.0f;
+    if (app->camInv.pitch < -89.0f) app->camInv.pitch = -89.0f;
+    vec3 front;
+    front.x = cos(glm::radians(app->camInv.yaw)) * cos(glm::radians(app->camInv.pitch));
+    front.y = sin(glm::radians(app->camInv.pitch));
+    front.z = sin(glm::radians(app->camInv.yaw)) * cos(glm::radians(app->camInv.pitch));
+    app->camInv.front = glm::normalize(front);
+
+    app->camInv.right = normalize(cross(glm::vec3(0.0f, 1.0f, 0.0f), app->camInv.front));
+    app->camInv.up = normalize(cross(app->camInv.front, app->camInv.right));
+    app->camInv.target = app->camInv.position + app->camInv.front;
 }
 
 
@@ -401,8 +447,7 @@ void Render(App* app)
     {
     case Mode_Forward:
     {
-
-        app->UpdateEntityBuffer();
+        app->UpdateEntityBuffer(&app->cam);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -415,14 +460,59 @@ void Render(App* app)
         const Program& ForwardProgram = app->programs[app->renderToBackBuffer];
         glUseProgram(ForwardProgram.handle);
 
-        app->RenderGeometry(ForwardProgram);
+        app->RenderGeometry(ForwardProgram, vec4(0.0f));
 
         //BufferManager::UnindBuffer(app->localUniformBuffer);
     }
     break;
     case Mode_Deferred:
     {
-        app->UpdateEntityBuffer();
+        glEnable(GL_CLIP_DISTANCE0);
+        // Refraction Pass
+        app->UpdateEntityBuffer(&app->cam);
+
+        //RENDER TO FB COLORaTT
+        glClearColor(0.f, 0.f, 0.f, .0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, app->displaySize.x, app->displaySize.y);
+        glBindFramebuffer(GL_FRAMEBUFFER, app->waterRefractionFrameBuffer.fbHandle);
+        glDrawBuffers(app->waterRefractionFrameBuffer.colorAttachment.size(), app->waterRefractionFrameBuffer.colorAttachment.data());
+        glClearColor(0.f, 0.f, 0.f, .0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        const Program& DeferredProgram = app->programs[app->renderToFrameBuffer];
+        glUseProgram(DeferredProgram.handle);
+
+        app->RenderGeometry(DeferredProgram, vec4(0, 1, 0, 0));
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        app->WaterPass(&app->cam, GL_COLOR_ATTACHMENT0, false);
+
+        // Reflection Pass
+        app->UpdateEntityBuffer(&app->camInv);
+
+        //RENDER TO FB COLORaTT
+        glClearColor(0.f, 0.f, 0.f, .0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, app->displaySize.x, app->displaySize.y);
+        glBindFramebuffer(GL_FRAMEBUFFER, app->waterReflectionFrameBuffer.fbHandle);
+        glDrawBuffers(app->waterReflectionFrameBuffer.colorAttachment.size(), app->waterReflectionFrameBuffer.colorAttachment.data());
+        glClearColor(0.f, 0.f, 0.f, .0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glUseProgram(DeferredProgram.handle);
+
+        app->RenderGeometry(DeferredProgram, vec4(0, -1, 0, 0));
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        glDisable(GL_CLIP_DISTANCE0);
+
+        app->WaterPass(&app->camInv, GL_COLOR_ATTACHMENT0, true);
+
+        // Main Pass
+        app->UpdateEntityBuffer(&app->cam);
 
         //RENDER TO FB COLORaTT
         glClearColor(0.f, 0.f, 0.f, .0f);
@@ -433,10 +523,10 @@ void Render(App* app)
         glClearColor(0.f, 0.f, 0.f, .0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        const Program& DeferredProgram = app->programs[app->renderToFrameBuffer];
         glUseProgram(DeferredProgram.handle);
 
-        app->RenderGeometry(DeferredProgram);
+        app->RenderGeometry(DeferredProgram, vec4(0.0f));
+
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         //RENDER SSAO
@@ -488,7 +578,7 @@ void Render(App* app)
         glClearColor(0.f, 0.f, 0.f, .0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, app->displaySize.x, app->displaySize.y);
-        
+
         glBindFramebuffer(GL_FRAMEBUFFER, app->ssaoBlurFrameBuffer.fbHandle);
         glDrawBuffers(app->ssaoBlurFrameBuffer.colorAttachment.size(), app->ssaoBlurFrameBuffer.colorAttachment.data());
         glClearColor(0.f, 0.f, 0.f, .0f);
@@ -506,17 +596,6 @@ void Render(App* app)
 
         glBindVertexArray(0);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        // Render Water
-        App::Camera reflectionCamera = app->cam;
-        reflectionCamera.position.y *= -1;
-        reflectionCamera.pitch *= -1;
-
-        app->WaterPass(&reflectionCamera, GL_COLOR_ATTACHMENT0, true);
-
-        App::Camera refractionCamera = app->cam;
-
-        app->WaterPass(&refractionCamera, GL_COLOR_ATTACHMENT0, false);
         
         //RENDER TO bb FROM cOLORaTT
         glClearColor(0.f, 0.f, 0.f, .0f);
@@ -590,21 +669,21 @@ void Render(App* app)
     }
 }
 
-void App::UpdateEntityBuffer()
+void App::UpdateEntityBuffer(Camera* camera)
 {
-    cam.aspRatio = (float)displaySize.x / (float)displaySize.y;
-    cam.fovYRad = glm::radians(60.0f);
-    glm::mat4 projection = glm::perspective(glm::radians(60.0f), cam.aspRatio, cam.zNear, cam.zFar);
+    camera->aspRatio = (float)displaySize.x / (float)displaySize.y;
+    camera->fovYRad = glm::radians(60.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(60.0f), camera->aspRatio, camera->zNear, camera->zFar);
 
-    vec3 xCam = glm::cross(cam.front, vec3(0, 1, 0));
-    vec3 yCam = glm::cross(xCam, cam.front);
+    vec3 xCam = glm::cross(camera->front, vec3(0, 1, 0));
+    vec3 yCam = glm::cross(xCam, camera->front);
 
-    glm::mat4 view = glm::lookAt(cam.position, cam.target, yCam);
+    glm::mat4 view = glm::lookAt(camera->position, camera->target, yCam);
     BufferManager::MapBuffer(localUniformBuffer, GL_WRITE_ONLY);
 
     //push lights globals paramas
     globalPatamsOffset = localUniformBuffer.head;
-    PushVec3(localUniformBuffer, cam.position);
+    PushVec3(localUniformBuffer, camera->position);
     PushUInt(localUniformBuffer, lights.size());
     for (u32 i = 0; i < lights.size(); ++i)
     {
@@ -728,7 +807,7 @@ void App::ConfigureSingleFrameBuffer(FrameBuffer& ssaoFB)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void App::RenderGeometry(const Program& aBindedProgram)
+void App::RenderGeometry(const Program& aBindedProgram, vec4 clippingPlane)
 {
     glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), localUniformBuffer.handle, globalPatamsOffset, globalPatamsSize);
     for (auto it = entities.begin(); it != entities.end(); ++it)
@@ -751,6 +830,8 @@ void App::RenderGeometry(const Program& aBindedProgram)
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textures[subMeshMaterial.albedoTextureIdx].handle);
             glUniform1i(texturedMeshProgram_uTexture, 0);
+
+            glUniform4f(glGetUniformLocation(aBindedProgram.handle, "clippingPlane"), clippingPlane.x, clippingPlane.y, clippingPlane.z, clippingPlane.w);
 
             SubMesh& submesh = mesh.submeshes[i];
             glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
@@ -839,47 +920,52 @@ void App::WaterPass(Camera* camera, GLenum ca, bool isReflectionPart)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, displaySize.x, displaySize.y);
 
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CLIP_DISTANCE0);
-
-    if (isReflectionPart) glBindFramebuffer(GL_FRAMEBUFFER, waterReflectionFrameBuffer.fbHandle);
-    else glBindFramebuffer(GL_FRAMEBUFFER, waterRefractionFrameBuffer.fbHandle);
+    if (isReflectionPart) glBindFramebuffer(GL_FRAMEBUFFER, waterReflectionDefferedFrameBuffer.fbHandle);
+    else glBindFramebuffer(GL_FRAMEBUFFER, waterRefractionDefferedFrameBuffer.fbHandle);
 
     glDrawBuffer(ca);
     glClearColor(0.f, 0.f, 0.f, .0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    const Program& program = programs[clippingPlaneShader];
+    const Program& program = programs[frameBufferToQuadShader];
     glUseProgram(program.handle);
 
-    glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(1), localUniformBuffer.handle, globalPatamsOffset, globalPatamsSize);
+    if (isReflectionPart)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, waterReflectionFrameBuffer.colorAttachment[0]);
+        glUniform1i(glGetUniformLocation(program.handle, "uAlbedo"), 0);
 
-    vec3 xCam = glm::cross(camera->front, vec3(0, 1, 0));
-    vec3 yCam = glm::cross(xCam, camera->front);
-    glm::mat4 viewMatrix = glm::lookAt(camera->position, camera->target, yCam);
-    glUniformMatrix4fv(glGetUniformLocation(program.handle, "viewMatrix"), 1, GL_FALSE, &viewMatrix[0][0]);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, waterReflectionFrameBuffer.colorAttachment[1]);
+        glUniform1i(glGetUniformLocation(program.handle, "uNormals"), 1);
 
-    glm::mat4 projection = glm::perspective(glm::radians(60.0f), camera->aspRatio, camera->zNear, camera->zFar);
-    glUniformMatrix4fv(glGetUniformLocation(program.handle, "projectionMatrix"), 1, GL_FALSE, &projection[0][0]);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, waterReflectionFrameBuffer.colorAttachment[2]);
+        glUniform1i(glGetUniformLocation(program.handle, "uPosition"), 2);
 
-    if (isReflectionPart) glUniform4f(glGetUniformLocation(program.handle, "clippingPlane"), 0, 1, 0, 0);
-    else glUniform4f(glGetUniformLocation(program.handle, "clippingPlane"), 0, -1, 0, 0);
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, waterReflectionFrameBuffer.colorAttachment[3]);
+        glUniform1i(glGetUniformLocation(program.handle, "uViewDir"), 3);
+    }
+    else
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, waterRefractionFrameBuffer.colorAttachment[0]);
+        glUniform1i(glGetUniformLocation(program.handle, "uAlbedo"), 0);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, defferedFrameBuffer.colorAttachment[0]);
-    glUniform1i(glGetUniformLocation(program.handle, "uAlbedo"), 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, waterRefractionFrameBuffer.colorAttachment[1]);
+        glUniform1i(glGetUniformLocation(program.handle, "uNormals"), 1);
 
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, defferedFrameBuffer.colorAttachment[1]);
-    glUniform1i(glGetUniformLocation(program.handle, "uNormals"), 1);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, waterRefractionFrameBuffer.colorAttachment[2]);
+        glUniform1i(glGetUniformLocation(program.handle, "uPosition"), 2);
 
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, defferedFrameBuffer.colorAttachment[2]);
-    glUniform1i(glGetUniformLocation(program.handle, "uPosition"), 2);
-
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, defferedFrameBuffer.colorAttachment[3]);
-    glUniform1i(glGetUniformLocation(program.handle, "uViewDir"), 3);
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, waterRefractionFrameBuffer.colorAttachment[3]);
+        glUniform1i(glGetUniformLocation(program.handle, "uViewDir"), 3);
+    }
 
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
