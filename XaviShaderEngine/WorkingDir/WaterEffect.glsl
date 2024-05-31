@@ -34,7 +34,7 @@ in Data
 uniform vec2 viewportSize;
 uniform mat4 modelViewMatrix;
 uniform mat4 viewMatrixInv;
-uniform mat projectionMatrixInv;
+uniform mat4 projectionMatrixInv;
 uniform sampler2D reflectionMap;
 uniform sampler2D refractionMap;
 uniform sampler2D reflectionDepth;
@@ -54,7 +54,7 @@ vec3 reconstructPixelPosition(float depth)
     vec2 textCoords = gl_FragCoord.xy / viewportSize;
     vec3 positionNDC = vec3(textCoords * 2.0 - vec2(1.0) , depth * 2.0 - 1.0);
     vec4 positionEyespace = projectionMatrixInv * vec4(positionNDC, 1.0);
-    positionEyespace.xyz / = positionEyespace.w;
+    positionEyespace.xyz /= positionEyespace.w;
     return positionEyespace.xyz;
 }
 
@@ -74,6 +74,19 @@ void main()
     vec2 reflectionTexCoord = vec2(texCoord.s, 1.0 - texCoord.t) + distortion;
     vec2 refractionTexCoord = texCoord + distortion;
     vec3 reflectionColor = texture(reflectionMap, reflectionTexCoord).rgb;
+    vec3 refractionColor = texture(refractionMap, refractionTexCoord).rgb;
+
+    float distortedGroundDepth = texture(refractionDepth, refractionTexCoord).x;
+    vec3 distortedGroundPosViewspace = reconstructPixelPosition(distortedGroundDepth);
+    float distortedWaterDepth = FSIn.positionViewspace.z - distortedGroundPosViewspace.z;
+    float tintFactor = clamp(distortedWaterDepth / turbidityDistance, 0.0, 1.0);
+    vec3 waterColor = vec3(0.25, 0.4, 0.6);
+    refractionColor = mix(refractionColor, waterColor, tintFactor);
+
+    vec3 F0 = vec3(1.0);
+    vec3 F = fresnelSchlick(max(0.0, dot(V, N)), F0);
+    oColor.rgb = mix(refractionColor, reflectionColor, F);
+    oColor.a = 1.0;
 }
 
 #endif
