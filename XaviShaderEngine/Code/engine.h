@@ -144,6 +144,9 @@ struct App
     FrameBuffer waterRefractionFrameBuffer;
     FrameBuffer waterReflectionDefferedFrameBuffer;
     FrameBuffer waterRefractionDefferedFrameBuffer;
+    FrameBuffer waterFrameBuffer;
+    GLuint waterNormalMap;
+    GLuint waterDudvMap;
 
     void WaterPass(Camera* camera, GLenum ca, bool isReflectionPart);
 
