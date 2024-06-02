@@ -355,6 +355,9 @@ void Gui(App* app)
         }
         if (app->renderBuffers == 0)
         {
+            ImGui::Checkbox("Use SSAO", &app->displaySSAO);
+            ImGui::SliderFloat("Sample Radius", &app->sampleRadius, 0.0f, 100.0f);
+            ImGui::SliderFloat("SSAO Bias", &app->ssaoBias, 0.0f, 100.0f);
             const char* modes[] = { "Albedo", "Normals", "Position", "ViewDir", "Depth" };
             for (size_t i = 0; i < app->defferedFrameBuffer.colorAttachment.size(); i++)
             {
@@ -557,8 +560,8 @@ void Render(App* app)
         glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[2]);
         glUniform1i(glGetUniformLocation(SsaoProgram.handle, "uPosition"), 1);
 
-        vec3 firstSamplePoint = SamplePositionsInTangent()[0];
-        glUniform3fv(glGetUniformLocation(SsaoProgram.handle, "ssaoSamples"), 64, glm::value_ptr(firstSamplePoint));
+        auto firstSamplePoint = SamplePositionsInTangent();
+        glUniform3fv(glGetUniformLocation(SsaoProgram.handle, "ssaoSamples"), 64, &firstSamplePoint.data()->x);
 
         glUniform1f(glGetUniformLocation(SsaoProgram.handle, "sampleRadius"), app->sampleRadius);
 
@@ -572,8 +575,6 @@ void Render(App* app)
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, app->ssaoNoiseTexture);
         glUniform1i(glGetUniformLocation(SsaoProgram.handle, "noiseTexture"), 2);
-
-        glUniform1f(glGetUniformLocation(SsaoProgram.handle, "useRangeCheck"), app->rangeCheck);
 
         glBindVertexArray(app->vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);

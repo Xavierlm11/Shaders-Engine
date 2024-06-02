@@ -24,7 +24,6 @@ uniform mat4 projectionMatrix;
 uniform vec2 viewportSize;
 uniform float ssaoBias;
 uniform sampler2D noiseTexture;
-uniform bool useRangeCheck;
 
 layout(location = 0) out vec4 oColor;
 
@@ -66,7 +65,6 @@ void main()
 
         float rangeCheck = smoothstep(0.0, 1.0, sampleRadius / abs(samplePosView.z - sampledPosView.z));
         rangeCheck *= rangeCheck;
-        if (!useRangeCheck) rangeCheck = 1.0;
         occlusion += (samplePosView.z < sampledPosView.z - ssaoBias ? 1.0 : 0.0) * rangeCheck;
     }
     

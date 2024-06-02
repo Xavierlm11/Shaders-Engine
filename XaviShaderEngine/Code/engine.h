@@ -132,7 +132,6 @@ struct App
     // SSAO variables
     float sampleRadius = 0.5f;
     float ssaoBias = 0.02f;
-    bool rangeCheck = true;
 
     void KernelRotationVectors();
     GLuint ssaoNoiseTexture;
