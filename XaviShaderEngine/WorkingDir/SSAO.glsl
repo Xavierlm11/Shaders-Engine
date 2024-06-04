@@ -33,7 +33,7 @@ vec3 reconstructPixelPosition(float d, vec2 v)
     float xndc = gl_FragCoord.x / v.x * 2.0 - 1.0;
     float yndc = gl_FragCoord.y / v.y * 2.0 - 1.0;
     float zndc = d * 2.0 - 1.0;
-    vec4 posNDC = vec4(xndc, yndc, xndc, 1.0);
+    vec4 posNDC = vec4(xndc, yndc, zndc, 1.0);
     vec4 posView = projectionMatrixInv * posNDC;
     return posView.xyz / posView.w;
 }
@@ -47,7 +47,6 @@ void main()
 
     vec3 vNormal = texture(uNormals, vTexCoord).xyz;
     vec3 tangent = normalize(randomVec - vNormal * dot(randomVec, vNormal));
-    //vec3 tangent = cross(vNormal, vec3(0, 1, 0));
     vec3 bitangent = cross(vNormal, tangent);
     mat3 TBN = mat3(tangent, bitangent, vNormal);
 
