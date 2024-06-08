@@ -7,7 +7,6 @@ layout(location = 1) in vec3 aNormal;
 
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
-uniform vec4 clippingPlane;
 
 out Data
 {
@@ -20,7 +19,6 @@ void main()
     VSOut.positionViewspace = vec3(viewMatrix * vec4(aPosition,1.0));
     VSOut.normalViewspace = vec3(viewMatrix * vec4(aNormal,0.0));
     gl_Position = projectionMatrix * vec4(VSOut.positionViewspace, 1.0);
-    gl_ClipDistance[0] = dot(vec4(aPosition,1.0), clippingPlane);
 }
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
@@ -32,14 +30,14 @@ in Data
 } FSIn; 
 
 uniform vec2 viewportSize;
-uniform mat4 modelViewMatrix;
+//uniform mat4 modelViewMatrix;
 uniform mat4 viewMatrixInv;
 uniform mat4 projectionMatrixInv;
 uniform sampler2D reflectionMap;
 uniform sampler2D refractionMap;
-uniform sampler2D reflectionDepth;
+//uniform sampler2D reflectionDepth;
 uniform sampler2D refractionDepth;
-uniform sampler2D normalMap;
+//uniform sampler2D normalMap;
 uniform sampler2D dudvMap;
 
 layout(location = 0) out vec4 oColor; // aqui se podria añadir mas como onormals
@@ -83,7 +81,7 @@ void main()
     vec3 waterColor = vec3(0.25, 0.4, 0.6);
     refractionColor = mix(refractionColor, waterColor, tintFactor);
 
-    vec3 F0 = vec3(1.0);
+    vec3 F0 = vec3(0.1);
     vec3 F = fresnelSchlick(max(0.0, dot(V, N)), F0);
     oColor.rgb = mix(refractionColor, reflectionColor, F);
     oColor.a = 1.0;

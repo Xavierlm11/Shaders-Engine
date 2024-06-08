@@ -237,8 +237,8 @@ void Init(App* app)
     app->ConfigureSingleFrameBuffer(app->waterRefractionDefferedFrameBuffer);
     app->ConfigureSingleFrameBuffer(app->waterFrameBuffer);
 
-    //app->waterNormalMap = ModelLoader::LoadTexture2D(app, "normalmap.png");
-    //app->waterDudvMap = ModelLoader::LoadTexture2D(app, "dudvmap.png");
+    app->waterNormalMap = ModelLoader::LoadTexture2D(app, "normalmap.png");
+    app->waterDudvMap = ModelLoader::LoadTexture2D(app, "dudvmap.png");
 
     app->renderToBackBuffer = LoadProgram(app, "RENDER_TO_BB.glsl", "RENDER_TO_BB");
     app->renderToFrameBuffer = LoadProgram(app, "RENDER_TO_FB.glsl", "RENDER_TO_FB");
@@ -618,14 +618,19 @@ void Render(App* app)
         const Program& waterProgram = app->programs[app->waterShader];
         glUseProgram(waterProgram.handle);
 
-        glUniform2f(glGetUniformLocation(waterProgram.handle, "viewportSize"), app->displaySize.x, app->displaySize.y);
-
         vec3 xCam = glm::cross(app->cam.front, vec3(0, 1, 0));
         vec3 yCam = glm::cross(xCam, app->cam.front);
-        glm::mat4 viewInv = glm::inverse(glm::lookAt(app->cam.position, app->cam.target, yCam));
+        glm::mat4 view = glm::lookAt(app->cam.position, app->cam.target, yCam);
+        glUniformMatrix4fv(glGetUniformLocation(waterProgram.handle, "viewMatrix"), 1, GL_FALSE, &view[0][0]);
+
+        glUniformMatrix4fv(glGetUniformLocation(waterProgram.handle, "projectionMatrix"), 1, GL_FALSE, &projection[0][0]);
+
+        glUniform2f(glGetUniformLocation(waterProgram.handle, "viewportSize"), app->displaySize.x, app->displaySize.y);
+
+        glm::mat4 viewInv = glm::inverse(view);
         glUniformMatrix4fv(glGetUniformLocation(waterProgram.handle, "viewMatrixInv"), 1, GL_FALSE, &viewInv[0][0]);
 
-        glm::mat4 projectionInv = glm::inverse(glm::perspective(glm::radians(60.0f), app->cam.aspRatio, app->cam.zNear, app->cam.zFar));
+        glm::mat4 projectionInv = glm::inverse(projection);
         glUniformMatrix4fv(glGetUniformLocation(waterProgram.handle, "projectionMatrixInv"), 1, GL_FALSE, &projectionInv[0][0]);
 
         glActiveTexture(GL_TEXTURE0);
