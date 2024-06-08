@@ -237,7 +237,7 @@ void Init(App* app)
     app->ConfigureSingleFrameBuffer(app->waterRefractionDefferedFrameBuffer);
     app->ConfigureSingleFrameBuffer(app->waterFrameBuffer);
 
-    app->waterNormalMap = ModelLoader::LoadTexture2D(app, "normalmap.png");
+    //app->waterNormalMap = ModelLoader::LoadTexture2D(app, "normalmap.png");
     app->waterDudvMap = ModelLoader::LoadTexture2D(app, "dudvmap.png");
 
     app->renderToBackBuffer = LoadProgram(app, "RENDER_TO_BB.glsl", "RENDER_TO_BB");
@@ -640,22 +640,14 @@ void Render(App* app)
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, app->waterRefractionDefferedFrameBuffer.colorAttachment[0]);
         glUniform1i(glGetUniformLocation(waterProgram.handle, "refractionMap"), 1);
-        
+
         glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, app->waterReflectionDefferedFrameBuffer.depthHandle);
-        glUniform1i(glGetUniformLocation(waterProgram.handle, "reflectionDepth"), 2);
+        glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[4]);
+        glUniform1i(glGetUniformLocation(waterProgram.handle, "refractionDepth"), 2);
 
         glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, app->waterRefractionDefferedFrameBuffer.depthHandle);
-        glUniform1i(glGetUniformLocation(waterProgram.handle, "refractionDepth"), 3);
-
-        glActiveTexture(GL_TEXTURE4);
-        glBindTexture(GL_TEXTURE_2D, app->waterNormalMap);
-        glUniform1i(glGetUniformLocation(waterProgram.handle, "normalMap"), 4);
-
-        glActiveTexture(GL_TEXTURE5);
-        glBindTexture(GL_TEXTURE_2D, app->waterDudvMap);
-        glUniform1i(glGetUniformLocation(waterProgram.handle, "dudvMap"), 5);
+        glBindTexture(GL_TEXTURE_2D, app->textures[app->waterDudvMap].handle);
+        glUniform1i(glGetUniformLocation(waterProgram.handle, "dudvMap"), 3);
 
         glBindVertexArray(app->vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
