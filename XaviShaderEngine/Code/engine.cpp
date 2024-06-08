@@ -282,7 +282,6 @@ void Init(App* app)
     app->entities.push_back({ TransformPositionScale(vec3(0.0, 2.0, 0.0), vec3(1.0, 1.0, 1.0)), houseShelfindex,0,0 });
     app->entities.push_back({ TransformPositionScale(vec3(-45.0, 0.0, 65.0), vec3(1.0, 1.0, 1.0)), lakeindex,0,0 });
 
-
     app->lights.push_back({ LightType::LightType_Directional,vec3(1.0,1.0,1.0),vec3(1.0,1.0,1.0),vec3(0.0,5.0,0.0) });
     app->lights.push_back({ LightType::LightType_Point,vec3(0.0,0.0,3.0),vec3(1.0,1.0,1.0),vec3(10.0,2.0,1.0) });
     app->lights.push_back({ LightType::LightType_Point,vec3(3.0,0.0,0.0),vec3(1.0,1.0,1.0),vec3(-10.0,2.0,1.0) });
@@ -293,8 +292,10 @@ void Init(App* app)
             app->entities.push_back({ TransformPositionScale((app->lights[i].position), vec3(0.5, 0.5, 0.5)), SphereModelindex,0,0 });
         else
             app->entities.push_back({ TransformPositionScale((app->lights[i].position), (-app->lights[i].direction)), ConeModelindex,0,0 });
-
     }
+
+    app->entitiesWithWater = app->entities;
+    app->entitiesWithWater.push_back({ TransformPositionScale(vec3(-45.0, 0.0, 65.0), vec3(1.0, 1.0, 1.0)), waterindex,0,0 });
 
     app->ConfigureFrameBuffer(app->defferedFrameBuffer);
     app->ConfigureFrameBuffer(app->waterRefractionFrameBuffer);
@@ -521,8 +522,58 @@ void Render(App* app)
 
         glDisable(GL_CLIP_DISTANCE0);
 
+        // Render Water
+        glClearColor(0.f, 0.f, 0.f, .0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, app->displaySize.x, app->displaySize.y);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, app->waterFrameBuffer.fbHandle);
+        glDrawBuffers(app->waterFrameBuffer.colorAttachment.size(), app->waterFrameBuffer.colorAttachment.data());
+        glClearColor(0.f, 0.f, 0.f, .0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        const Program& waterProgram = app->programs[app->waterShader];
+        glUseProgram(waterProgram.handle);
+
+        vec3 xCam = glm::cross(app->cam.front, vec3(0, 1, 0));
+        vec3 yCam = glm::cross(xCam, app->cam.front);
+        glm::mat4 view = glm::lookAt(app->cam.position, app->cam.target, yCam);
+        glUniformMatrix4fv(glGetUniformLocation(waterProgram.handle, "viewMatrix"), 1, GL_FALSE, &view[0][0]);
+
+        glm::mat4 projection = glm::perspective(glm::radians(60.0f), app->cam.aspRatio, app->cam.zNear, app->cam.zFar);
+        glUniformMatrix4fv(glGetUniformLocation(waterProgram.handle, "projectionMatrix"), 1, GL_FALSE, &projection[0][0]);
+
+        glUniform2f(glGetUniformLocation(waterProgram.handle, "viewportSize"), app->displaySize.x, app->displaySize.y);
+
+        glm::mat4 viewInv = glm::inverse(view);
+        glUniformMatrix4fv(glGetUniformLocation(waterProgram.handle, "viewMatrixInv"), 1, GL_FALSE, &viewInv[0][0]);
+        glm::mat4 projectionInv = glm::inverse(projection);
+        glUniformMatrix4fv(glGetUniformLocation(waterProgram.handle, "projectionMatrixInv"), 1, GL_FALSE, &projectionInv[0][0]);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, app->waterReflectionDefferedFrameBuffer.colorAttachment[0]);
+        glUniform1i(glGetUniformLocation(waterProgram.handle, "reflectionMap"), 0);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, app->waterRefractionDefferedFrameBuffer.colorAttachment[0]);
+        glUniform1i(glGetUniformLocation(waterProgram.handle, "refractionMap"), 1);
+
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[4]);
+        glUniform1i(glGetUniformLocation(waterProgram.handle, "refractionDepth"), 2);
+
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, app->textures[app->waterDudvMap].handle);
+        glUniform1i(glGetUniformLocation(waterProgram.handle, "dudvMap"), 3);
+
+        glBindVertexArray(app->vao);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+
+        glBindVertexArray(0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
         // Main Pass
-        app->UpdateEntityBuffer(&app->cam);
+        app->UpdateEntityBufferWithWater(&app->cam);
 
         //RENDER TO FB COLORaTT
         glClearColor(0.f, 0.f, 0.f, .0f);
@@ -535,7 +586,7 @@ void Render(App* app)
 
         glUseProgram(DeferredProgram.handle);
 
-        app->RenderGeometry(DeferredProgram, vec4(0.0f));
+        app->RenderGeometryWithWater(DeferredProgram);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         
@@ -565,7 +616,6 @@ void Render(App* app)
 
         glUniform1f(glGetUniformLocation(SsaoProgram.handle, "sampleRadius"), app->sampleRadius);
 
-        glm::mat4 projection = glm::perspective(glm::radians(60.0f), app->cam.aspRatio, app->cam.zNear, app->cam.zFar);
         glUniformMatrix4fv(glGetUniformLocation(SsaoProgram.handle, "projectionMatrix"), 1, GL_FALSE, &projection[0][0]);
 
         glUniform2f(glGetUniformLocation(SsaoProgram.handle, "viewportSize"), app->displaySize.x, app->displaySize.y);
@@ -598,56 +648,6 @@ void Render(App* app)
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, app->ssaoFrameBuffer.colorAttachment[0]);
         glUniform1i(glGetUniformLocation(SsaoBlurProgram.handle, "ssaoTexture"), 0);
-
-        glBindVertexArray(app->vao);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-
-        glBindVertexArray(0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        
-        // Render Water
-        glClearColor(0.f, 0.f, 0.f, .0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glViewport(0, 0, app->displaySize.x, app->displaySize.y);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, app->waterFrameBuffer.fbHandle);
-        glDrawBuffers(app->waterFrameBuffer.colorAttachment.size(), app->waterFrameBuffer.colorAttachment.data());
-        glClearColor(0.f, 0.f, 0.f, .0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        const Program& waterProgram = app->programs[app->waterShader];
-        glUseProgram(waterProgram.handle);
-
-        vec3 xCam = glm::cross(app->cam.front, vec3(0, 1, 0));
-        vec3 yCam = glm::cross(xCam, app->cam.front);
-        glm::mat4 view = glm::lookAt(app->cam.position, app->cam.target, yCam);
-        glUniformMatrix4fv(glGetUniformLocation(waterProgram.handle, "viewMatrix"), 1, GL_FALSE, &view[0][0]);
-
-        glUniformMatrix4fv(glGetUniformLocation(waterProgram.handle, "projectionMatrix"), 1, GL_FALSE, &projection[0][0]);
-
-        glUniform2f(glGetUniformLocation(waterProgram.handle, "viewportSize"), app->displaySize.x, app->displaySize.y);
-
-        glm::mat4 viewInv = glm::inverse(view);
-        glUniformMatrix4fv(glGetUniformLocation(waterProgram.handle, "viewMatrixInv"), 1, GL_FALSE, &viewInv[0][0]);
-
-        glm::mat4 projectionInv = glm::inverse(projection);
-        glUniformMatrix4fv(glGetUniformLocation(waterProgram.handle, "projectionMatrixInv"), 1, GL_FALSE, &projectionInv[0][0]);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, app->waterReflectionDefferedFrameBuffer.colorAttachment[0]);
-        glUniform1i(glGetUniformLocation(waterProgram.handle, "reflectionMap"), 0);
-
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, app->waterRefractionDefferedFrameBuffer.colorAttachment[0]);
-        glUniform1i(glGetUniformLocation(waterProgram.handle, "refractionMap"), 1);
-
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, app->defferedFrameBuffer.colorAttachment[4]);
-        glUniform1i(glGetUniformLocation(waterProgram.handle, "refractionDepth"), 2);
-
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, app->textures[app->waterDudvMap].handle);
-        glUniform1i(glGetUniformLocation(waterProgram.handle, "dudvMap"), 3);
 
         glBindVertexArray(app->vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
@@ -759,6 +759,53 @@ void App::UpdateEntityBuffer(Camera* camera)
     //local parms
     u32 iteration = 0;
     for (auto it = entities.begin(); it != entities.end(); ++it)
+    {
+        glm::mat4 world = it->worldMatrix;
+        glm::mat4 WVP = projection * view * world; //wordl view projection
+
+        Buffer& localBuffer = localUniformBuffer;
+        BufferManager::AlignHead(localBuffer, uniformBlockAlignment);
+        it->localParamsOffset = localBuffer.head;
+        PushMat4(localBuffer, world);
+        PushMat4(localBuffer, WVP);
+        it->localParamsSize = localBuffer.head - it->localParamsOffset;
+        ++iteration;
+    }
+    BufferManager::UnmapBuffer(localUniformBuffer);
+}
+
+void App::UpdateEntityBufferWithWater(Camera* camera)
+{
+    camera->aspRatio = (float)displaySize.x / (float)displaySize.y;
+    camera->fovYRad = glm::radians(60.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(60.0f), camera->aspRatio, camera->zNear, camera->zFar);
+
+    vec3 xCam = glm::cross(camera->front, vec3(0, 1, 0));
+    vec3 yCam = glm::cross(xCam, camera->front);
+
+    glm::mat4 view = glm::lookAt(camera->position, camera->target, yCam);
+    BufferManager::MapBuffer(localUniformBuffer, GL_WRITE_ONLY);
+
+    //push lights globals paramas
+    globalPatamsOffset = localUniformBuffer.head;
+    PushVec3(localUniformBuffer, camera->position);
+    PushUInt(localUniformBuffer, lights.size());
+    for (u32 i = 0; i < lights.size(); ++i)
+    {
+        BufferManager::AlignHead(localUniformBuffer, sizeof(vec4));
+
+        Light& light = lights[i];
+        PushUInt(localUniformBuffer, light.type);
+        PushVec3(localUniformBuffer, light.color);
+        PushVec3(localUniformBuffer, light.direction);
+        PushVec3(localUniformBuffer, light.position);
+    }
+
+    globalPatamsSize = localUniformBuffer.head - globalPatamsOffset;
+
+    //local parms
+    u32 iteration = 0;
+    for (auto it = entitiesWithWater.begin(); it != entitiesWithWater.end(); ++it)
     {
         glm::mat4 world = it->worldMatrix;
         glm::mat4 WVP = projection * view * world; //wordl view projection
@@ -899,9 +946,45 @@ void App::RenderGeometry(const Program& aBindedProgram, vec4 clippingPlane)
             SubMesh& submesh = mesh.submeshes[i];
             glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
         }
-
     }
+}
 
+void App::RenderGeometryWithWater(const Program& aBindedProgram)
+{
+    glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), localUniformBuffer.handle, globalPatamsOffset, globalPatamsSize);
+    for (auto it = entitiesWithWater.begin(); it != entitiesWithWater.end(); ++it)
+    {
+
+        glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(1), localUniformBuffer.handle, it->localParamsOffset, it->localParamsSize); //todu creo q aqui no va, creo que es modelloading que no va
+
+        Model& model = models[it->modelIndex];
+        Mesh& mesh = meshes[model.meshIdx];
+
+
+        for (u32 i = 0; i < mesh.submeshes.size(); ++i)
+        {
+            GLuint vao = FindVAO(mesh, i, aBindedProgram);
+            glBindVertexArray(vao);
+
+            u32 subMeshmaterialIdx = model.materialIdx[i];
+            Material subMeshMaterial = materials[subMeshmaterialIdx];
+
+            glActiveTexture(GL_TEXTURE0);
+            /*if (i < mesh.submeshes.size() - 1) */ glBindTexture(GL_TEXTURE_2D, textures[subMeshMaterial.albedoTextureIdx].handle);
+            /*else glBindTexture(GL_TEXTURE_2D, waterFrameBuffer.colorAttachment[0]);*/
+            glUniform1i(texturedMeshProgram_uTexture, 0);
+
+            glUniform4f(glGetUniformLocation(aBindedProgram.handle, "clippingPlane"), 0, 0, 0, 0);
+
+            vec3 xCam = glm::cross(cam.front, vec3(0, 1, 0));
+            vec3 yCam = glm::cross(xCam, cam.front);
+            glm::mat4 view = glm::lookAt(cam.position, cam.target, yCam);
+            glUniformMatrix4fv(glGetUniformLocation(aBindedProgram.handle, "viewMatrix"), 1, GL_FALSE, &view[0][0]);
+
+            SubMesh& submesh = mesh.submeshes[i];
+            glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
+        }
+    }
 }
 
 const GLuint App::CreateTexture(const bool isFloatingPoint)
