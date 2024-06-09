@@ -26,7 +26,10 @@ Deferred Rendering:
 - Water Shader
 
 ## Controls:
+### Move Camera
 WASDQE
-Right Click to rotate
+### Rotate CameraRight
+Click to rotate
+### Display Framebuffers
 ImGui Window to display separeted framebuffers
 - Combo with Main buffers, Reflection buffers and Refraction Buffers
