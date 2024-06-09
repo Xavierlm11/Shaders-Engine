@@ -2,7 +2,7 @@
 This is a engine where the its only proupose is to show programmed shaders , its made by CITM students
 
 ## About Sahder Engine
-![fis1](https://user-images.githubusercontent.com/79161102/212576726-6051841c-d5a8-48f6-a3d9-6b5af09c835c.PNG)
+
 
 ## Water shader
 Reflection And Refraction Textures (Albedo, Normal, Position, View, Depth and final deferred)
@@ -17,7 +17,11 @@ Reflection And Refraction Textures (Albedo, Normal, Position, View, Depth and fi
 
 
 ## Screen Space Ambient Occlusion (SSAO)
-AQUI VA SSAO
+![NoSSAO](https://github.com/Xavierlm11/Shaders-Engine/assets/79161102/12c636a6-8bea-435d-a58c-c71a559dd864)
+![SiSSAO](https://github.com/Xavierlm11/Shaders-Engine/assets/79161102/e07263b1-8e34-4755-a5db-1e46ba0ec640)
+![NoSSAO2](https://github.com/Xavierlm11/Shaders-Engine/assets/79161102/1f860e19-c191-4dff-a55e-a45537335218)
+![SiSSAO2](https://github.com/Xavierlm11/Shaders-Engine/assets/79161102/81773668-4dbc-49b6-8ffc-fc3486214b42)
+
 
 Forward Rendering
 
