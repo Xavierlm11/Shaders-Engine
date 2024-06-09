@@ -46,12 +46,10 @@ struct App
     bool firstClick;
 
     void UpdateEntityBuffer(Camera* camera);
-    void UpdateEntityBufferWithWater(Camera* camera);
 
     void ConfigureFrameBuffer(FrameBuffer& aConfigFb);
 
     void RenderGeometry(const Program& aBindedProgram, vec4 clippingPlane);
-    void RenderGeometryWithWater(const Program& aBindedProgram);
 
     const GLuint CreateTexture(const bool isFloatingPoint = false);
 
@@ -118,7 +116,7 @@ struct App
     std::vector<Entity> entities; // iteracion rapida
     std::vector<Entity> lightEntities; // iteracion rapida
     std::vector<Light> lights; // iteracion rapida
-    std::vector<Entity> entitiesWithWater;
+    Entity water;
 
     GLuint globalPatamsOffset;
     GLuint globalPatamsSize;

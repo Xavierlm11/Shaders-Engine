@@ -6,6 +6,7 @@ layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec3 aNormal;
 
 uniform mat4 viewMatrix;
+uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 
 out Data
@@ -16,7 +17,7 @@ out Data
 
 void main()
 {
-    VSOut.positionViewspace = vec3(viewMatrix * vec4(aPosition,1.0));
+    VSOut.positionViewspace = vec3(viewMatrix * modelViewMatrix * vec4(aPosition,1.0));
     VSOut.normalViewspace = vec3(viewMatrix * vec4(aNormal,0.0));
     gl_Position = projectionMatrix * vec4(VSOut.positionViewspace, 1.0);
 }
