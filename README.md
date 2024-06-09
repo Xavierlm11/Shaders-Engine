@@ -10,3 +10,14 @@ AQUI VA EL AGUA
 ## Screen Space Ambient Occlusion (SSAO)
 AQUI VA SSAO
 
+Forward Rendering
+
+Deferred Rendering:
+- SSAO with Blur
+- Water Shader
+
+## Controls:
+WASDQE
+Right Click to rotate
+ImGui Window to display separeted framebuffers
+- Combo with Main buffers, Reflection buffers and Refraction Buffers
