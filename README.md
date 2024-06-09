@@ -1,6 +1,7 @@
 # Introduction
-This is a engine where the its only proupose is to show programmed shaders , its made by CITM students: Ruben Ayoura [(ruboki)](https://github.com/RubokiReuchi) & Xavier López [(Xavierlm11)](https://github.com/Xavierlm11)
-Github page: https://github.com/Xavierlm11/Shaders-Engine/releases
+This is a engine where the its only proupose is to show programmed shaders , its made by CITM students:
+- Ruben Ayoura [(ruboki)](https://github.com/RubokiReuchi) & Xavier López [(Xavierlm11)](https://github.com/Xavierlm11)
+- Github page: https://github.com/Xavierlm11/Shaders-Engine/releases
 ## Water effect
 Reflection And Refraction Textures (Albedo, Normal, Position, View, Depth and final deferred)
 ### Reflection Textures
