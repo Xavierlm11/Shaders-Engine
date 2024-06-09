@@ -1,10 +1,7 @@
 # Introduction
-This is a engine where the its only proupose is to show programmed shaders , its made by CITM students
-
-## About Sahder Engine
-
-
-## Water shader
+This is a engine where the its only proupose is to show programmed shaders , its made by CITM students: Ruben Ayoura [(ruboki)](https://github.com/RubokiReuchi) & Xavier López [(Xavierlm11)](https://github.com/Xavierlm11)
+Github page: https://github.com/Xavierlm11/Shaders-Engine/releases
+## Water effect
 Reflection And Refraction Textures (Albedo, Normal, Position, View, Depth and final deferred)
 ### Reflection Textures
 ![Captura3](https://github.com/Xavierlm11/Shaders-Engine/assets/79161175/0102b1fe-2d84-4d8e-b847-1740520ec9cd)
@@ -35,4 +32,4 @@ WASDQE
 Click to rotate
 ### Display Framebuffers
 ImGui Window to display separeted framebuffers
-- Combo with Main buffers, Reflection buffers and Refraction Buffers
+- Combo with Main buffers, Reflection buffers and Refraction Buffer
