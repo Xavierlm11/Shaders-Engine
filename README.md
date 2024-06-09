@@ -17,17 +17,16 @@ Reflection And Refraction Textures (Albedo, Normal, Position, View, Depth and fi
 
 
 ## Screen Space Ambient Occlusion (SSAO)
+### Comparison with and without SSAO
 ![NoSSAO](https://github.com/Xavierlm11/Shaders-Engine/assets/79161102/12c636a6-8bea-435d-a58c-c71a559dd864)
 ![SiSSAO](https://github.com/Xavierlm11/Shaders-Engine/assets/79161102/e07263b1-8e34-4755-a5db-1e46ba0ec640)
 ![NoSSAO2](https://github.com/Xavierlm11/Shaders-Engine/assets/79161102/1f860e19-c191-4dff-a55e-a45537335218)
 ![SiSSAO2](https://github.com/Xavierlm11/Shaders-Engine/assets/79161102/81773668-4dbc-49b6-8ffc-fc3486214b42)
+### Ambient Oclussion
+![image](https://github.com/Xavierlm11/Shaders-Engine/assets/79161102/8b6095cb-bb5c-40d8-80ea-cd64e75a7727)
+### Ambient Oclussion with blur
+![image](https://github.com/Xavierlm11/Shaders-Engine/assets/79161102/b1a07e62-b502-4f7f-9742-aff1a06b6c7b)
 
-
-Forward Rendering
-
-Deferred Rendering:
-- SSAO with Blur
-- Water Shader
 
 ## Controls:
 ### Move Camera
