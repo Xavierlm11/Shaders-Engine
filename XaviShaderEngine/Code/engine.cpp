@@ -294,7 +294,9 @@ void Init(App* app)
             app->entities.push_back({ TransformPositionScale((app->lights[i].position), (-app->lights[i].direction)), ConeModelindex,0,0 });
     }
 
-    app->water = { TransformPositionScale(vec3(-45.0, 0.0, 65.0), vec3(40.0, 1.0, 40.0)), waterindex,0,0 };
+    app->water = { TransformPositionScale(vec3(-45.0, 0.0, 65.0), vec3(1.0, 1.0, 1.0)), waterindex,0,0 };
+    app->entitiesWithWater = app->entities;
+    app->entitiesWithWater.push_back(app->water);
 
     app->ConfigureFrameBuffer(app->defferedFrameBuffer);
     app->ConfigureFrameBuffer(app->waterRefractionFrameBuffer);
@@ -539,7 +541,7 @@ void Render(App* app)
         glm::mat4 view = glm::lookAt(app->cam.position, app->cam.target, yCam);
         glUniformMatrix4fv(glGetUniformLocation(waterProgram.handle, "viewMatrix"), 1, GL_FALSE, &view[0][0]);
 
-        glm::mat4 waterMatrix = glm::rotate(app->water.worldMatrix, glm::radians(-90.0f), glm::vec3(1, 0, 0));
+        glm::mat4 waterMatrix = glm::rotate(glm::scale(app->water.worldMatrix, glm::vec3(40, 0, 40)), glm::radians(-90.0f), glm::vec3(1, 0, 0));
         glUniformMatrix4fv(glGetUniformLocation(waterProgram.handle, "modelViewMatrix"), 1, GL_FALSE, &waterMatrix[0][0]);
 
         glm::mat4 projection = glm::perspective(glm::radians(60.0f), app->cam.aspRatio, app->cam.zNear, app->cam.zFar);
@@ -575,7 +577,7 @@ void Render(App* app)
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         // Main Pass
-        app->UpdateEntityBuffer(&app->cam);
+        app->UpdateEntityBufferWithWater(&app->cam);
 
         //RENDER TO FB COLORaTT
         glClearColor(0.f, 0.f, 0.f, .0f);
@@ -588,7 +590,7 @@ void Render(App* app)
 
         glUseProgram(DeferredProgram.handle);
 
-        app->RenderGeometry(DeferredProgram, vec4(0.0f));
+        app->RenderGeometryWithWater(DeferredProgram);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         
@@ -726,6 +728,7 @@ void Render(App* app)
 
             glBindVertexArray(0);
         }
+
         glUseProgram(0);
     }
     break;
@@ -765,6 +768,53 @@ void App::UpdateEntityBuffer(Camera* camera)
     //local parms
     u32 iteration = 0;
     for (auto it = entities.begin(); it != entities.end(); ++it)
+    {
+        glm::mat4 world = it->worldMatrix;
+        glm::mat4 WVP = projection * view * world; //wordl view projection
+
+        Buffer& localBuffer = localUniformBuffer;
+        BufferManager::AlignHead(localBuffer, uniformBlockAlignment);
+        it->localParamsOffset = localBuffer.head;
+        PushMat4(localBuffer, world);
+        PushMat4(localBuffer, WVP);
+        it->localParamsSize = localBuffer.head - it->localParamsOffset;
+        ++iteration;
+    }
+    BufferManager::UnmapBuffer(localUniformBuffer);
+}
+
+void App::UpdateEntityBufferWithWater(Camera* camera)
+{
+    camera->aspRatio = (float)displaySize.x / (float)displaySize.y;
+    camera->fovYRad = glm::radians(60.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(60.0f), camera->aspRatio, camera->zNear, camera->zFar);
+
+    vec3 xCam = glm::cross(camera->front, vec3(0, 1, 0));
+    vec3 yCam = glm::cross(xCam, camera->front);
+
+    glm::mat4 view = glm::lookAt(camera->position, camera->target, yCam);
+    BufferManager::MapBuffer(localUniformBuffer, GL_WRITE_ONLY);
+
+    //push lights globals paramas
+    globalPatamsOffset = localUniformBuffer.head;
+    PushVec3(localUniformBuffer, camera->position);
+    PushUInt(localUniformBuffer, lights.size());
+    for (u32 i = 0; i < lights.size(); ++i)
+    {
+        BufferManager::AlignHead(localUniformBuffer, sizeof(vec4));
+
+        Light& light = lights[i];
+        PushUInt(localUniformBuffer, light.type);
+        PushVec3(localUniformBuffer, light.color);
+        PushVec3(localUniformBuffer, light.direction);
+        PushVec3(localUniformBuffer, light.position);
+    }
+
+    globalPatamsSize = localUniformBuffer.head - globalPatamsOffset;
+
+    //local parms
+    u32 iteration = 0;
+    for (auto it = entitiesWithWater.begin(); it != entitiesWithWater.end(); ++it)
     {
         glm::mat4 world = it->worldMatrix;
         glm::mat4 WVP = projection * view * world; //wordl view projection
@@ -896,6 +946,46 @@ void App::RenderGeometry(const Program& aBindedProgram, vec4 clippingPlane)
             glUniform1i(texturedMeshProgram_uTexture, 0);
 
             glUniform4f(glGetUniformLocation(aBindedProgram.handle, "clippingPlane"), clippingPlane.x, clippingPlane.y, clippingPlane.z, clippingPlane.w);
+
+            vec3 xCam = glm::cross(cam.front, vec3(0, 1, 0));
+            vec3 yCam = glm::cross(xCam, cam.front);
+            glm::mat4 view = glm::lookAt(cam.position, cam.target, yCam);
+            glUniformMatrix4fv(glGetUniformLocation(aBindedProgram.handle, "viewMatrix"), 1, GL_FALSE, &view[0][0]);
+
+            SubMesh& submesh = mesh.submeshes[i];
+            glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
+        }
+    }
+}
+
+void App::RenderGeometryWithWater(const Program& aBindedProgram)
+{
+    glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(0), localUniformBuffer.handle, globalPatamsOffset, globalPatamsSize);
+    for (auto it = entitiesWithWater.begin(); it != entitiesWithWater.end(); ++it)
+    {
+
+        glBindBufferRange(GL_UNIFORM_BUFFER, BINDING(1), localUniformBuffer.handle, it->localParamsOffset, it->localParamsSize); //todu creo q aqui no va, creo que es modelloading que no va
+
+        Model& model = models[it->modelIndex];
+        Mesh& mesh = meshes[model.meshIdx];
+
+        for (u32 i = 0; i < mesh.submeshes.size(); ++i)
+        {
+            GLuint vao = FindVAO(mesh, i, aBindedProgram);
+            glBindVertexArray(vao);
+
+            u32 subMeshmaterialIdx = model.materialIdx[i];
+            Material subMeshMaterial = materials[subMeshmaterialIdx];
+
+            glActiveTexture(GL_TEXTURE0);
+            if (it->modelIndex != water.modelIndex) glBindTexture(GL_TEXTURE_2D, textures[subMeshMaterial.albedoTextureIdx].handle);
+            else
+            {
+                glBindTexture(GL_TEXTURE_2D, waterFrameBuffer.colorAttachment[0]);
+            }
+            glUniform1i(texturedMeshProgram_uTexture, 0);
+
+            glUniform4f(glGetUniformLocation(aBindedProgram.handle, "clippingPlane"), 0, 0, 0, 0);
 
             vec3 xCam = glm::cross(cam.front, vec3(0, 1, 0));
             vec3 yCam = glm::cross(xCam, cam.front);
